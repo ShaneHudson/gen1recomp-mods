@@ -2,11 +2,11 @@
 
 ## 1.3.1
 
-- A classic step encounter that rolls a species with a lookalike within
-  two cells of the player now consumes that bird: it carries its own
-  level into the battle, and a defeat or capture never leaves it
-  perched there or flying off. When a grounded and a flying match are
-  both close, the grounded one is the battle.
+- If a normal grass battle rolls a species while that same species is
+  sitting or landing within two cells of the player, the battle now is
+  that bird: it brings its own level, and beating or catching it
+  removes the sprite instead of leaving it there. A grounded match is
+  picked over a flying one.
 - For mod authors (see INTEGRATION.md in the repository):
   `exports.spawnFlyer(species, level)` spawns one flyer on demand, the
   `mod.wild_skies.flyer_bumped` event broadcasts ground-bump battles,
