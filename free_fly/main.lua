@@ -38,6 +38,8 @@ return function(mod)
     { key = "badges", label = "BADGE CHECKS", type = "toggle", default = true },
     -- the Pallet Town gift Pidgey; off leaves a fully vanilla start
     { key = "quickstart", label = "QUICK START", type = "toggle", default = true },
+    -- keyboard F: take off with the first eligible partner, or land
+    { key = "shortcut", label = "SHORTCUT KEY F", type = "toggle", default = true },
   })
 
   local ALTS = { low = 32, med = 56, high = 80 }
@@ -88,6 +90,21 @@ return function(mod)
       if m == "FLY" then return true end
     end
     return false
+  end
+
+  -- knows FLY, and is a plausible flyer: HM02-compatible or FLYING-type.
+  -- The type check matters because Red/Blue's Charizard famously cannot
+  -- learn HM02 (Yellow added it), yet it is obviously a ride.
+  local function eligibleFlyer(game, mon)
+    return knowsFly(mon)
+      and (canLearnFly(game, mon)
+           or Sky.hasType(game.data, mon.species, "FLYING"))
+  end
+
+  local function badgeOk(game, mon)
+    return not mod.options:get("badges")
+      or (game.save.inventory and game.save.inventory.THUNDERBADGE)
+      or mon.freeFlyGift
   end
 
   local function partyKnowsSurf(save)
@@ -155,11 +172,7 @@ return function(mod)
     if type(out) ~= "table" then return out end
     local ow = ctx and ctx.overworld
     if not (ow and ow.map and ow.map.def) or flying() then return out end
-    if not (knowsFly(mon) and canLearnFly(game, mon)) then return out end
-    if mod.options:get("badges") and not game.save.inventory.THUNDERBADGE
-       and not mon.freeFlyGift then
-      return out
-    end
+    if not (eligibleFlyer(game, mon) and badgeOk(game, mon)) then return out end
     if ow.player and ow.player.onBike then return out end
     local Map = require("src.world.Map")
     local FieldDefaults = require("src.world.FieldDefaults")
@@ -480,9 +493,42 @@ return function(mod)
       table.insert(ow.entities, r)
     end
 
+    local MapField = require("src.world.FieldDefaults")
+
+    -- the F shortcut's takeoff: first eligible partner, same gates as
+    -- the FREEFLY menu entry
+    local function shortcutTakeoff(ow)
+      local save = Game.save
+      if not (save and ow.map and ow.map.def) or ow.player.onBike then return end
+      if not MapDef.isOutside(ow.map.def,
+            MapField.field(Game.data, "outsideTilesets")) then
+        return
+      end
+      for _, mon in ipairs(save.party or {}) do
+        if eligibleFlyer(Game, mon) and badgeOk(Game, mon) then
+          startFlight(Game, mon)
+          return
+        end
+      end
+      mod.log:info("no FLY-ready partner in the party")
+    end
+
     OC.__freeFlyTick = function(ow, dt)
       local p = ow.player
       if not p then return end
+      -- keyboard F: take off when grounded, land when flying.  The tick
+      -- only runs while the overworld owns input, so menus never see it.
+      if mod.options:get("shortcut") and love.keyboard then
+        local down = love.keyboard.isDown("f")
+        if down and not state.fHeld then
+          if state.phase == "flying" then
+            state.landRequest = true
+          elseif state.phase == "idle" then
+            shortcutTakeoff(ow)
+          end
+        end
+        state.fHeld = down
+      end
       if not flying() then
         if p.freeFlyAlt then p.freeFlyAlt, p.freeFlying = nil, nil end
         if p.freeFlyWalkSprite then
@@ -536,7 +582,8 @@ return function(mod)
         -- an ALTITUDE option change applies mid-flight
         state.alt = state.alt + (cruiseAlt() - state.alt) * math.min(1, dt * 2)
 
-        if Game.input:wasPressed("b") then
+        if Game.input:wasPressed("b") or state.landRequest then
+          state.landRequest = nil
           if canLand then
             state.phase = "landing"
           else

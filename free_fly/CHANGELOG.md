@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+
+- Eligibility fix: a mon that knows FLY qualifies if it can learn HM02 OR
+  is FLYING-type. Red/Blue's Charizard cannot learn HM02 (Yellow added
+  it), so the strict machine check wrongly hid FREEFLY on it.
+- Keyboard shortcut: F takes off with the first eligible partner and
+  lands while airborne. SHORTCUT KEY F option (default on).
+
 ## 1.0.0
 
 - 1.0.0: first public release. QUICK START option (default on) gates

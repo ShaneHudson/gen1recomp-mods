@@ -20,9 +20,11 @@ in voxel.
 
 ## Getting airborne
 
-1. Have a party member that knows FLY (the species must be able to learn
-   HM02, so a hacked-in FLY on the wrong species doesn't count).
-2. Open its party submenu and pick FREEFLY.
+1. Have a party member that knows FLY. The species must be able to
+   learn HM02 or be a FLYING type (the type check is what lets Red and
+   Blue's Charizard carry you, since only Yellow made it HM02-compatible).
+2. Open its party submenu and pick FREEFLY, or just press F on the
+   keyboard to take off with your first eligible partner.
 3. Move as normal. The shadow under you turns green over ground you can
    land on; press the B button (X on keyboard) to set down. Blacking out also grounds you.
 
@@ -47,6 +49,7 @@ appears.
 | STORY GATES | ON | badge-gated areas (Route 23) refuse airborne entry |
 | BADGE CHECKS | ON | vanilla badges: THUNDERBADGE to fly, SOULBADGE to land on water (the gift Pidgey is exempt from the fly check) |
 | QUICK START | ON | the Pallet Town Pidgey |
+| SHORTCUT KEY F | ON | F takes off with the first eligible partner, or lands |
 
 ## What flying changes, and what it doesn't
 
