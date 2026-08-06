@@ -4,9 +4,7 @@ Two mods for [gen1recomp](https://github.com/bryanthaboi/gen1recomp)
 that put Pokémon in the sky. They work alone, but they're built to be
 used together.
 
-[![Watch the demo](.github/demo.gif)](https://www.loom.com/share/5867c264456040c8a37acc7e32f4c827)
-
-*Click through for the demo video.*
+https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.mp4
 
 **[free_fly](free_fly/)**: a party member that knows FLY carries you
 around the overworld. Take off anywhere outdoors, fly over trees, water
