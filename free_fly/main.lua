@@ -36,6 +36,8 @@ return function(mod)
     -- down on water.  The Pallet gift Pidgey is exempt from the fly check
     -- (never the surf one), so the quick start survives the option.
     { key = "badges", label = "BADGE CHECKS", type = "toggle", default = true },
+    -- the Pallet Town gift Pidgey; off leaves a fully vanilla start
+    { key = "quickstart", label = "QUICK START", type = "toggle", default = true },
   })
 
   local ALTS = { low = 32, med = 56, high = 80 }
@@ -254,6 +256,7 @@ return function(mod)
   })
 
   local function spawnPidgey()
+    if not mod.options:get("quickstart") then return end
     local ow = mod.world and mod.world:overworld()
     if not (ow and ow.map and ow.map.id == "PALLET_TOWN") then return end
     if state.pidgeyNpcId then return end

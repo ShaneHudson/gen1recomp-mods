@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0
+
+- 1.0.0: first public release. QUICK START option (default on) gates
+  the Pallet Town gift Pidgey; MIT license.
+
 ## 0.12.0
 
 - 2D riding reads as riding: the rider draws first, tucked low, and the

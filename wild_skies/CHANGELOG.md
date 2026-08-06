@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+- 1.0.0: first public release, lockstep with free_fly. MIT license.
+
 ## 0.5.0
 
 - GROUND BUMPS (option, default on): a bird at or below 12px, perched,
