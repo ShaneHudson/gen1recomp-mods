@@ -95,6 +95,19 @@ return function(mod)
 
   local function knowsFly(mon) return Sky.knowsMove(mon, "FLY") end
 
+  -- where the sky exists: outside maps, plus Viridian Forest, whose
+  -- canopy reads as open air even though vanilla classes it indoor
+  local function skyAbove(game, mapDef)
+    if not mapDef then return false end
+    local Map = require("src.world.Map")
+    local FieldDefaults = require("src.world.FieldDefaults")
+    if Map.isOutside(mapDef,
+         FieldDefaults.field(game.data, "outsideTilesets")) then
+      return true
+    end
+    return mapDef.tileset == "FOREST"
+  end
+
   -- HM02 compatibility: the species' tmhm list is the same one the
   -- machine-teach path checks, so eligibility exactly matches "could this
   -- mon legitimately learn FLY"
@@ -212,12 +225,7 @@ return function(mod)
     if not (ow and ow.map and ow.map.def) or flying() then return out end
     if not (eligibleFlyer(game, ow, mon) and badgeOk(game, mon)) then return out end
     if ow.player and ow.player.onBike then return out end
-    local Map = require("src.world.Map")
-    local FieldDefaults = require("src.world.FieldDefaults")
-    if not Map.isOutside(ow.map.def,
-                         FieldDefaults.field(game.data, "outsideTilesets")) then
-      return out
-    end
+    if not skyAbove(game, ow.map.def) then return out end
     table.insert(out, 1, { label = "FREEFLY", onSelect = function(m, g)
       -- unwind party menu / start menu back to the overworld, then lift off
       local stack = g.stack
@@ -343,11 +351,8 @@ return function(mod)
     if flying() then
       local ow = mod.world and mod.world:overworld()
       if ow and ow.map and ow.map.def then
-        local Map = require("src.world.Map")
-        local FieldDefaults = require("src.world.FieldDefaults")
         local game = require("src.core.Game")
-        if not Map.isOutside(ow.map.def,
-              FieldDefaults.field(game.data, "outsideTilesets")) then
+        if not skyAbove(game, ow.map.def) then
           state.phase, state.alt = "idle", 0
           mod.log:info("indoors; flight over")
         end
@@ -632,8 +637,7 @@ return function(mod)
       if ow.player.onBike then
         return false, "Not while riding\nthe BICYCLE!"
       end
-      if not MapDef.isOutside(ow.map.def,
-            MapField.field(Game.data, "outsideTilesets")) then
+      if not skyAbove(Game, ow.map.def) then
         return false, "There's no open\nsky here!"
       end
       for _, mon in ipairs(save.party or {}) do
@@ -721,11 +725,7 @@ return function(mod)
           and top ~= nil and top.isOverworld
         if takeover then
           local ow = top
-          local Map = require("src.world.Map")
-          local FieldDefaults = require("src.world.FieldDefaults")
-          takeover = ow.map and ow.map.def
-            and Map.isOutside(ow.map.def,
-                  FieldDefaults.field(game.data, "outsideTilesets"))
+          takeover = ow.map and skyAbove(game, ow.map.def)
         end
         if not takeover then
           state.qsArmed, state.qsHeld = nil, nil
@@ -1093,16 +1093,34 @@ return function(mod)
     -- story gates and the sea-crossing confirm share the seam chokepoint.
     -- v2 guard flag: the 0.7.0 wrapper did not pass `dir`, so a hot reload
     -- from it installs this one and retires the old gate key.
-    if not OC.__freeFlyCrossWrapped2 then
-      OC.__freeFlyCrossWrapped2 = true
+    if not OC.__freeFlyCrossWrapped3 then
+      OC.__freeFlyCrossWrapped3 = true
       local origCross = OC.crossConnection
       OC.crossConnection = function(self, dir, conn)
         local gate = OC.__freeFlyCrossGate2
         if gate and conn and gate(self, dir, conn.map) then return false end
-        return origCross(self, dir, conn)
+        local crossed = origCross(self, dir, conn)
+        local after = OC.__freeFlyCrossAfter
+        if crossed and after then after(self) end
+        return crossed
       end
     end
     OC.__freeFlyCrossGate = nil
+
+    -- the seam step crossConnection kicks off bypasses tryMove, so it
+    -- would run at walking pace mid-flight (a visible hitch at every
+    -- seam); the rider ghost also needs re-attaching the same frame the
+    -- entity list is rebuilt, not a tick later
+    OC.__freeFlyCrossAfter = function(ow)
+      local p = ow.player
+      if not (p and p.freeFlying) then return end
+      p.stepFramesCur = flyFrames()
+      if state.rider then
+        state.rider.px, state.rider.py = p.px, p.py
+        state.rider.cellX, state.rider.cellY = p.cellX, p.cellY
+        table.insert(ow.entities, state.rider)
+      end
+    end
 
     -- forced-movement tiles (Cycling Road's mount-or-refuse, forced surf
     -- currents) don't grab what flies over them; landing brings the
