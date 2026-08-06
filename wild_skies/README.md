@@ -14,7 +14,7 @@ level. High flyers never trigger battles from the ground. If you also
 have [free_fly](../free_fly) installed, flying into one starts its
 battle mid-air.
 
-https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.mp4
+[![Demo](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.gif)](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.mp4)
 
 ## Options
 

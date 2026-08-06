@@ -5,7 +5,7 @@ off anywhere outdoors, fly over trees, water, fences and rooftops, cross
 into neighbouring routes (the sea included), and press B over open
 ground to land. That's the whole mod: free flight, no dependencies.
 
-https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.mp4
+[![Demo](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.gif)](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/demo.mp4)
 
 Looking for a bigger mount system? Check out
 [Dramatic Sky Ride](https://github.com/mfrtechconsult/dramatic-sky-ride):
