@@ -907,6 +907,71 @@ return function(mod)
       return { mapId = map.id, w = w, cells = cells }
     end
 
+    -- Assisted landing: breadth-first from the rider over flyable cells
+    -- (anything in bounds that isn't a sealed tower facade) to the
+    -- nearest cell you could set down on.  Dry land wins over water,
+    -- doormats and occupied cells are skipped, and south is tried first
+    -- so hovering over a building tends to land at its entrance.
+    local APPROACH_RANGE = 12
+    local APPROACH_DIRS = { { 0, 1 }, { 1, 0 }, { -1, 0 }, { 0, -1 } }
+
+    local function findLandingPath(ow, p)
+      local map = ow.map
+      local lm = state.landmark
+      local w = map.widthCells
+      local function facade(cx, cy)
+        return lm and lm.mapId == map.id and lm.cells[cy * lm.w + cx]
+      end
+      local allowWater = (fieldMoveUser(ow, "SURF") ~= nil
+                          or partyKnowsSurf(Game.save))
+        and (not mod.options:get("badges")
+             or (Game.save.inventory and Game.save.inventory.SOULBADGE))
+      local function landable(cx, cy)
+        if facade(cx, cy) or map:warpAtCell(cx, cy)
+           or Collision.occupied(ow.entities, cx, cy, p) then
+          return nil
+        end
+        if map:isWalkableCell(cx, cy) then return "ground" end
+        if allowWater and map:isWaterCell(cx, cy) then return "water" end
+        return nil
+      end
+      local sx, sy = p.cellX, p.cellY
+      local startKey = sy * w + sx
+      local seen, parent = { [startKey] = true }, {}
+      local queue, qi = { { sx, sy, 0 } }, 1
+      local function pathTo(key)
+        local path = {}
+        while key and key ~= startKey do
+          table.insert(path, 1, { key % w, math.floor(key / w) })
+          key = parent[key]
+        end
+        return path[1] and path or nil
+      end
+      local waterKey
+      while queue[qi] do
+        local cx, cy, depth = queue[qi][1], queue[qi][2], queue[qi][3]
+        qi = qi + 1
+        if depth > 0 then
+          local kind = landable(cx, cy)
+          if kind == "ground" then return pathTo(cy * w + cx) end
+          if kind == "water" and not waterKey then waterKey = cy * w + cx end
+        end
+        if depth < APPROACH_RANGE then
+          for _, d in ipairs(APPROACH_DIRS) do
+            local nx, ny = cx + d[1], cy + d[2]
+            local key = ny * w + nx
+            if not seen[key] and map:inBounds(nx, ny)
+               and not facade(nx, ny) then
+              seen[key] = true
+              parent[key] = cy * w + cx
+              queue[#queue + 1] = { nx, ny, depth + 1 }
+            end
+          end
+        end
+      end
+      return waterKey and pathTo(waterKey) or nil
+    end
+
     OC.__freeFlyTick = function(ow, dt)
       local p = ow.player
       if not p then return end
@@ -980,10 +1045,19 @@ return function(mod)
           if canLand then
             state.phase = "landing"
           else
-            pcall(function()
-              require("src.core.Sound").play(Game.data, "Collision")
-            end)
-            mod.log:info("can't land here")
+            -- assisted landing: glide to the nearest landable cell (in
+            -- front of the building you're hovering over) and set down
+            local path = findLandingPath(ow, p)
+            if path then
+              state.phase = "approach"
+              state.approachPath = path
+              mod.log:info("gliding to a landing spot")
+            else
+              pcall(function()
+                require("src.core.Sound").play(Game.data, "Collision")
+              end)
+              mod.log:info("nowhere to land nearby")
+            end
           end
         end
 
@@ -1010,6 +1084,41 @@ return function(mod)
               mod.world:queueScript({
                 { "start_battle", "wild", hit.species, hit.level or 5 },
               })
+            end
+          end
+        end
+      elseif state.phase == "approach" then
+        state.alt = state.alt + (cruiseAlt() - state.alt) * math.min(1, dt * 2)
+        -- the glide is autopilot, so ANY steering or another land press
+        -- hands control straight back
+        local steering = Game.input:isDown("up") or Game.input:isDown("down")
+          or Game.input:isDown("left") or Game.input:isDown("right")
+        local cancel = steering or Game.input:wasPressed("b")
+          or state.landRequest
+        state.landRequest = nil
+        if cancel or not state.approachPath then
+          state.phase, state.approachPath = "flying", nil
+        elseif not p.moving then
+          local nextCell = state.approachPath[1]
+          if not nextCell then
+            state.approachPath = nil
+            -- recheck on arrival: an NPC may have wandered onto the spot
+            state.phase = canLand and "landing" or "flying"
+          else
+            local dir
+            if nextCell[1] > p.cellX then dir = "right"
+            elseif nextCell[1] < p.cellX then dir = "left"
+            elseif nextCell[2] > p.cellY then dir = "down"
+            elseif nextCell[2] < p.cellY then dir = "up" end
+            if not dir then
+              table.remove(state.approachPath, 1)
+            else
+              local result = p:tryMove(dir, ow.map, ow.entities)
+              if result == "moved" then
+                table.remove(state.approachPath, 1)
+              elseif result == "blocked" then
+                state.phase, state.approachPath = "flying", nil
+              end
             end
           end
         end
