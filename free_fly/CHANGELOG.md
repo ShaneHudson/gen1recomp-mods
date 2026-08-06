@@ -18,7 +18,8 @@
   Celadon Mansion) marks its building footprint as blocked while
   airborne, so you fly up to the facade and bump instead of clipping
   through. Derived from map data, never an authored list; small houses
-  stay fly-over.
+  stay fly-over. Basements don't count as floors and cave interiors
+  never qualify, so Seafoam, Mt Moon and Victory Road stay flyable.
 - Fix: tapping SELECT with no bicycle no longer also shows Quick
   Select's "You don't have a BICYCLE" (its raw press-queue branch saw
   the tap before we consumed it).

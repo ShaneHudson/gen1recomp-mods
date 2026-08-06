@@ -747,9 +747,17 @@ return function(mod)
       if type(destId) ~= "string" then return 0 end
       local base = destId:gsub("_B?%d+F$", ""):gsub("_ROOF$", "")
       if base == destId then return 1 end
+      -- caves are terrain, not towers: Seafoam or Victory Road go deep
+      -- and stay flyable no matter how many maps they span
+      local destDef = Game.data.maps[destId]
+      if destDef and destDef.tileset == "CAVERN" then return 1 end
+      -- only floors ABOVE ground make a building tall; basements don't
       local n = 0
       for id in pairs(Game.data.maps) do
-        if id == base or id:find("^" .. base .. "_") then n = n + 1 end
+        if (id == base or id:find("^" .. base .. "_"))
+           and not id:find("_B%d+F$") then
+          n = n + 1
+        end
       end
       return n
     end
