@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+- Flyers survive seamless map crossings: they translate with the same
+  coordinate rebase the player gets instead of despawning at the seam.
+  Warps and doors still clear the sky as before.
+
 ## 1.0.0
 
 - 1.0.0: first public release, lockstep with free_fly. MIT license.

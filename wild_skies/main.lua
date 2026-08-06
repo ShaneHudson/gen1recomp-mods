@@ -337,7 +337,13 @@ return function(mod)
            (self.vx < 0 and "left" or "right"), flapPhase(self), false, false
   end
 
+  local keepThroughSeam = false
+
   mod.events:on("map.exited", function()
+    if keepThroughSeam then
+      keepThroughSeam = false
+      return
+    end
     local Game = require("src.core.Game")
     clearAll(Game and Game.overworld)
     cooldown = 3
@@ -442,6 +448,40 @@ return function(mod)
           if not ok then print("[wild_skies] tick failed: " .. tostring(err)) end
         end
       end
+    end
+
+    -- birds survive seamless connection crossings: translate them by the
+    -- same coordinate rebase the player gets, and re-attach them to the
+    -- rebuilt entity list.  Out-of-bounds ones despawn naturally.
+    if not OC.__wildSkiesSeamWrapped then
+      OC.__wildSkiesSeamWrapped = true
+      local origCross = OC.crossConnection
+      OC.crossConnection = function(self, dir, conn)
+        local carry = OC.__wildSkiesCarry
+        if not carry then return origCross(self, dir, conn) end
+        return carry(self, dir, conn, origCross)
+      end
+    end
+    OC.__wildSkiesCarry = function(self, dir, conn, origCross)
+      local p = self.player
+      local beforeX, beforeY = p.px, p.py
+      keepThroughSeam = #flyers > 0
+      local crossed = origCross(self, dir, conn)
+      if not crossed then
+        keepThroughSeam = false
+        return crossed
+      end
+      local dx, dy = p.px - beforeX, p.py - beforeY
+      for _, f in ipairs(flyers) do
+        f.px, f.py = f.px + dx, f.py + dy
+        if f.landX then f.landX, f.landY = f.landX + dx, f.landY + dy end
+        f.cellX = math.floor((f.px + 8) / 16)
+        f.cellY = math.floor((f.py + 8) / 16)
+        f.mapW = ((self.map.widthCells or (self.map.width or 10) * 2)) * 16
+        f.mapH = ((self.map.heightCells or (self.map.height or 9) * 2)) * 16
+        table.insert(self.entities, f)
+      end
+      return crossed
     end
   end)
 end
