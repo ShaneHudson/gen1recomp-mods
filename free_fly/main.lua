@@ -551,37 +551,45 @@ return function(mod)
     local MapField = require("src.world.FieldDefaults")
     local MapLoader = require("src.world.MapLoader")
 
-    -- a fast flyer hits seams constantly, and each crossing loads the
-    -- destination plus its whole neighbor ring (rebuildNeighbors).  While
-    -- airborne, warm the MapLoader cache ahead of time: the current map's
-    -- connections and, one hop further, the neighbors of each of those.
-    -- One load per tick, so the prefetch can never spike a frame itself.
-    local function refillPrefetch(ow)
-      state.prefetchQueue = {}
-      local seen = {}
-      local function push(id)
-        if id and not seen[id] and not MapLoader.cached(id) then
-          seen[id] = true
-          state.prefetchQueue[#state.prefetchQueue + 1] = id
-        end
-      end
-      -- one hop only: the engine's LRU protects current+neighbours, so a
-      -- second hop churned the cache (evict, re-warm, re-analyse) every
-      -- crossing -- the Cycling Road corridor made that visibly heavy
-      for _, conn in pairs((ow.map.def and ow.map.def.connections) or {}) do
-        push(conn.map)
+    -- the whole outdoor world is small (36 maps, under a megabyte of
+    -- block data, renderers draw windowed), so a flyer keeps ALL of it
+    -- resident: trim() treats the outdoor set as protected, and every
+    -- outdoor map is warmed once at one load per tick (~half a second).
+    -- Seam crossings then never load anything.  Indoor maps keep the
+    -- engine's normal LRU.
+    local outdoorSet = {}
+    do
+      local outside = MapField.field(Game.data, "outsideTilesets")
+      for id, def in pairs(Game.data.maps) do
+        if MapDef.isOutside(def, outside) then outdoorSet[id] = true end
       end
     end
 
-    local function tickPrefetch(ow)
-      if state.prefetchFor ~= ow.map.id then
-        state.prefetchFor = ow.map.id
-        refillPrefetch(ow)
+    if not MapLoader.__freeFlyWrapped then
+      MapLoader.__freeFlyWrapped = true
+      local origTrim = MapLoader.trim
+      MapLoader.trim = function(protected)
+        local extra = MapLoader.__freeFlyProtected
+        if extra then
+          protected = protected or {}
+          for id in pairs(extra) do protected[id] = true end
+        end
+        return origTrim(protected)
       end
+    end
+    MapLoader.__freeFlyProtected = outdoorSet
+
+    state.prefetchQueue = {}
+    for id in pairs(outdoorSet) do
+      if not MapLoader.cached(id) then
+        state.prefetchQueue[#state.prefetchQueue + 1] = id
+      end
+    end
+
+    local function tickPrefetch()
       local id = table.remove(state.prefetchQueue)
       if not id then return end
-      -- engine map cache only; the voxel scene already body-meshes its
-      -- own one-hop neighbours, so extra mesh requests just fed the churn
+      -- engine map cache only; the voxel scene meshes its own neighbours
       local okLoad = pcall(MapLoader.load, Game.data, id)
       if not okLoad then state.prefetchQueue = {} end
     end
@@ -952,7 +960,7 @@ return function(mod)
           end
         end
       end
-      tickPrefetch(ow)
+      tickPrefetch()
       state.expectBattle = (state.expectBattle and state.expectBattle > dt)
         and (state.expectBattle - dt) or nil
       state.windCooldown = math.max(0, (state.windCooldown or 0) - dt)

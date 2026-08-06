@@ -29,10 +29,13 @@
   Enclosed walkable pockets inside a tower footprint (the dept store's
   rooftop plaza) seal while airborne, so towers can't be crossed via
   their roofs; walking out onto a roof and taking off still works.
-- Performance: seam prefetch is one hop only and no longer queues voxel
-  meshes. The two-hop version fought the engine's LRU (evict, re-warm,
-  re-analyse every crossing), which is what dragged the Cycling Road
-  corridor down; the voxel scene already meshes its own neighbours.
+- Performance: the whole outdoor world stays resident while you fly.
+  All 36 outdoor maps (under a megabyte of block data) are warmed once
+  at one load per tick and marked protected from the engine's cache
+  eviction, so seam crossings never load anything and the LRU churn that
+  dragged the Cycling Road corridor down is gone entirely. Indoor maps
+  keep the normal cache behaviour; voxel meshes stay with the scene's
+  own neighbour pump.
 - Voxel ride height is a constant total above the ground plane (>= 66px,
   measured against the profile's flat 16px solids and the scene's 48px
   volume cap), so every small building clears at default altitude

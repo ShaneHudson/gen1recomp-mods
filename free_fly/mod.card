@@ -15,6 +15,7 @@ return {
       "options: altitude, fly speed, air encounters, trainer sight",
     },
     known = {
+      "keeps all outdoor maps resident while installed; fine on desktop, untested on handhelds",
       "voxel mode: the rider draws as the full standing figure above the bird, not a seated crop",
       "link play untested while airborne",
     },
