@@ -580,6 +580,77 @@ return function(mod)
       end
       grantWhistle()
       mod.events:on("save.loaded", grantWhistle)
+
+      -- With no BICYCLE in the bag, tap-SELECT means flight: Quick
+      -- Select's tap is hardcoded to the bicycle and would only print
+      -- "You don't have a BICYCLE".  This wrapper runs OUTER on the same
+      -- hook (priority 600 vs its 500), takes over the SELECT gesture
+      -- for exactly that case, blinds the inner chain to SELECT so Quick
+      -- Select never arms, and hands hold+direction slots back through
+      -- its public exports.  Own a bicycle and this is fully transparent.
+      local DIRS = { "up", "down", "left", "right" }
+      local function consumeQueued(input, buttons)
+        local drop = {}
+        for _, b in ipairs(buttons) do drop[b] = true end
+        local kept = {}
+        for _, b in ipairs(input.pressQueue or {}) do
+          if not drop[b] then kept[#kept + 1] = b end
+        end
+        input.pressQueue = kept
+      end
+
+      mod.hooks:wrap("input.step", function(nextFn, game, dt)
+        local input = game and game.input
+        local inv = game and game.save and game.save.inventory
+        local top = game and game.stack and game.stack:top()
+        local takeover = input and inv and (inv.BICYCLE or 0) <= 0
+          and top ~= nil and top.isOverworld
+        if not takeover then
+          state.qsArmed, state.qsHeld = nil, nil
+          return nextFn(game, dt)
+        end
+
+        local down = input:isDown("select")
+        local was = state.qsHeld
+        state.qsHeld = down
+        if down and not was then state.qsArmed = true end
+
+        local slotDir
+        if state.qsArmed and down then
+          for _, d in ipairs(DIRS) do
+            if input:wasPressed(d) then slotDir = d break end
+          end
+        end
+        local tap = was and not down and state.qsArmed
+        if slotDir or tap then state.qsArmed = nil end
+
+        local origDown, origWas = input.isDown, input.wasPressed
+        input.isDown = function(self, b)
+          if b == "select" then return false end
+          return origDown(self, b)
+        end
+        input.wasPressed = function(self, b)
+          if b == "select" then return false end
+          return origWas(self, b)
+        end
+        local ok, err = pcall(nextFn, game, dt)
+        input.isDown, input.wasPressed = origDown, origWas
+        if not ok then error(err, 0) end
+
+        if slotDir then
+          consumeQueued(input, { "select", slotDir })
+          pcall(function() quickSelect.exports.activate(game, slotDir) end)
+        elseif tap then
+          consumeQueued(input, { "select" })
+          local impl = ItemEffects.__freeFlyUse
+          if impl then
+            local kind, msgs = impl("FLY_WHISTLE", false)
+            if kind == "failed" and msgs and msgs[1] then
+              game.stack:push(mod.ui.TextBox.new(game, msgs[1]))
+            end
+          end
+        end
+      end, 600)
     end
 
     OC.__freeFlyTick = function(ow, dt)

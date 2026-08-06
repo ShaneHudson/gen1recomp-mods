@@ -85,7 +85,8 @@ overlapping features of their own, so check their changelogs):
 - [Quick Select](https://github.com/Roxas2712/pokemon-quick-select): when
   installed, a FLY WHISTLE key item appears in your bag. Register it to a
   SELECT+direction slot (the same way you register any item there) and
-  that shortcut toggles flight. Without Quick Select the whistle doesn't
+  that shortcut toggles flight. While you own no BICYCLE, tap-SELECT
+  itself defaults to flight. Without Quick Select the whistle doesn't
   exist.
 
 ## Install

@@ -8,8 +8,11 @@
 - Quick Select integration: with jj_quick_select installed (and only
   then), a FLY WHISTLE key item appears in the bag. Register it to a
   SELECT+direction slot and it toggles flight: takeoff with the first
-  eligible partner, landing while airborne. Without quick select the
-  whistle does not exist and nothing changes.
+  eligible partner, landing while airborne. With no BICYCLE in the bag,
+  tap-SELECT defaults to flight instead of the "You don't have a
+  BICYCLE" message (hold+direction slots keep working); owning a bicycle
+  restores Quick Select's native tap. Without quick select none of this
+  exists and nothing changes.
 
 ## 1.0.0
 
