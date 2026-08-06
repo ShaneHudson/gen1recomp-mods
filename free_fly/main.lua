@@ -1063,7 +1063,8 @@ return function(mod)
         state.placeHeight = (p.freeFlyAlt or 0) + gh
       else
         p.freeFlyAlt = lift
-        camLift = lift
+        -- the camera holds the constant altitude; only the sprite bobs
+        camLift = state.alt
       end
       ow.camera:follow(p.px, p.py - camLift,
                        Game.renderer:worldViewSize())
