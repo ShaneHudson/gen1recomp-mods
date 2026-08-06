@@ -13,11 +13,6 @@
   pump (the identical body-only request its scene makes for neighbours),
   so a flown-into map doesn't drop to the flat 2D fallback while it
   meshes.
-- The void border (tree fill beyond map edges) is not drawn while
-  airborne: it is decoration, and skipping it removes the visible
-  re-render when seam crossings flip its ownership. In voxel, full-mesh
-  requests answer with the cached ring-less body mesh while flying (never
-  waiting, so no 2D flash); landing restores the trees instantly.
 - Ledges no longer hijack an airborne step into the vanilla hop (the
   arc used to stack on the flight lift); a flyer just crosses them.
 - Voxel: visual flight height raised to 75% (was 60%), balanced by the

@@ -958,47 +958,16 @@ return function(mod)
       state.expectBattle = nil
     end)
 
-    -- the void border (tree fill beyond the map edges) is decoration and
-    -- never interactable; while airborne it is simply not drawn, which
-    -- removes the visible re-render when crossings flip its ownership.
-    -- 2D: the beyond-ring backfill is a per-frame draw, skipped for free.
+    -- neutralize stale border wraps from a hot reload of the previous
+    -- build; the border draws normally everywhere again
     local TileRenderer = require("src.render.TileRenderer")
-    if not TileRenderer.__freeFlyWrapped then
-      TileRenderer.__freeFlyWrapped = true
-      local origFill = TileRenderer.drawBorderFill
-      TileRenderer.drawBorderFill = function(self, ...)
-        local gate = TileRenderer.__freeFlySkip
-        if gate and gate() then return end
-        return origFill(self, ...)
-      end
-    end
-    TileRenderer.__freeFlySkip = function() return flying() end
-
-    -- voxel: the ring is meshed into the current map's FULL mesh, so
-    -- while airborne every full-mesh request answers with the ring-less
-    -- BODY mesh instead -- but only once that body mesh is cached, so
-    -- the scene never drops to the 2D fallback waiting for it.  Landing
-    -- resumes full requests and the cached ring returns instantly.
-    do
+    TileRenderer.__freeFlySkip = nil
+    pcall(function()
       local exports = Game.mods and Game.mods.exports
       local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
-      local okM, CM = pcall(function() return V and V.require("ChunkMesher") end)
-      if okM and CM and CM.request then
-        if not CM.__freeFlyWrapped then
-          CM.__freeFlyWrapped = true
-          local origReq = CM.request
-          CM.request = function(map, bodyOnly, masks, urgent)
-            local gate = CM.__freeFlyBodyOnly
-            if gate and gate() and not bodyOnly then
-              local body = origReq(map, true, masks, false)
-              if body then return body end
-            end
-            return origReq(map, bodyOnly, masks, urgent)
-          end
-        end
-        CM.__freeFlyBodyOnly = function() return flying() end
-      end
-    end
+      local CM = V and V.require("ChunkMesher")
+      if CM then CM.__freeFlyBodyOnly = nil end
+    end)
 
     -- a flyer crossing a ledge just crosses it: the vanilla hop would
     -- hijack the step and stack its arc on top of the flight lift
