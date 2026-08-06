@@ -15,3 +15,7 @@ love . --developer
 
 Spawns only happen on maps whose grass slots contain a FLYING type (routes
 get Pidgey/Spearow, caves get Zubat), capped at 3 at a time.
+
+Pokémon is a trademark of Nintendo; the Gen 1 games are © Nintendo /
+Creatures Inc. / GAME FREAK inc. Unofficial fan mod; no ROMs, no
+copyrighted game content. See the repository NOTICE.md.

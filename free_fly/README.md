@@ -19,3 +19,7 @@ don't pull you in, and saving is blocked until you land (so a save can
 never strand you over water).
 
 Known rough edges are listed in `mod.card`.
+
+Pokémon is a trademark of Nintendo; the Gen 1 games are © Nintendo /
+Creatures Inc. / GAME FREAK inc. Unofficial fan mod; no ROMs, no
+copyrighted game content. See the repository NOTICE.md.

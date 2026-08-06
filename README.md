@@ -3,6 +3,10 @@
 Mods for [gen1recomp](https://github.com/bryanthaboi/gen1recomp), kept in
 one repo with lockstep versions and per-mod release downloads.
 
+Pokémon is a trademark of Nintendo; the Gen 1 games are © Nintendo /
+Creatures Inc. / GAME FREAK inc. This is an unofficial fan project that
+ships no ROMs and no copyrighted game content; see [NOTICE.md](NOTICE.md).
+
 | Mod | What it does |
 |---|---|
 | [`free_fly`](free_fly/) | Ride a FLY user: free-roam flight, story gates, badge checks, aerial interception |
