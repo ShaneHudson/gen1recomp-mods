@@ -1062,8 +1062,9 @@ return function(mod)
                    and state.voxelStateRef.isThirdPerson(rung))
         state.placeHeight = (p.freeFlyAlt or 0) + gh
       else
-        p.freeFlyAlt = lift
-        -- the camera holds the constant altitude; only the sprite bobs
+        -- 2D flies steady: a 2px integer-quantized hover reads as
+        -- jitter, and the wing flap already carries the life
+        p.freeFlyAlt = state.alt
         camLift = state.alt
       end
       ow.camera:follow(p.px, p.py - camLift,
