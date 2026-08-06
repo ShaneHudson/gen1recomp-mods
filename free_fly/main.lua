@@ -1030,15 +1030,28 @@ return function(mod)
         -- per-cell part: roofs mix zero-height flat-class cells into
         -- their upper rows, and a camera tracking freeFlyAlt lurched
         -- there while the card itself stayed level.  The follow factor
-        -- scales with the voxel rung: steeper pitches project vertical
-        -- offsets taller on screen, so the camera keeps the rider near
-        -- centre at 75 instead of leaving it distant at the frame top.
-        -- At 75 the camera deliberately OVERSHOOTS the rider's height
-        -- (factor > 1): aiming past the card drops the rider to centre
-        -- frame and pushes the foreground buildings down and away.
-        local FOLLOW = { 0.65, 0.65, 0.78, 2.0 }
+        -- scales with the rung's PITCH, read live from the voxel mod's
+        -- own angle table (the ladder is OFF/FULL/15/35/50/75/1ST/3RD,
+        -- so indexing by rung was wrong: "75" is rung 5).  At 75 degrees
+        -- the camera deliberately OVERSHOOTS the rider's height: aiming
+        -- past the card drops the rider to centre frame and pushes the
+        -- foreground buildings away.
+        local FOLLOW_BY_DEG = { [15] = 0.65, [35] = 0.65,
+                                [50] = 0.78, [75] = 2.0 }
         local rung = Pipelines.level("voxel") or 0
-        camLift = total * (FOLLOW[rung] or 0.65)
+        if state.voxelStateRef == nil then
+          state.voxelStateRef = false
+          local exports = Game.mods and Game.mods.exports
+          local V = exports and exports.DRAMATIC_SHAPE
+            and exports.DRAMATIC_SHAPE.lib
+          local okV, vs = pcall(function()
+            return V and V.require("VoxelState")
+          end)
+          if okV and vs and vs.ANGLES_DEG then state.voxelStateRef = vs end
+        end
+        local deg = state.voxelStateRef
+          and state.voxelStateRef.ANGLES_DEG[rung + 1] or 0
+        camLift = total * (FOLLOW_BY_DEG[deg] or 0.65)
       else
         p.freeFlyAlt = lift
         camLift = lift
