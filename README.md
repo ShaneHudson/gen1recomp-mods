@@ -1,15 +1,31 @@
 # gen1recomp-mods
 
-Mods for [gen1recomp](https://github.com/bryanthaboi/gen1recomp).
+Two mods for [gen1recomp](https://github.com/bryanthaboi/gen1recomp)
+that put Pokémon in the sky. They work alone, but they're built to be
+used together.
 
-Pokémon is a trademark of Nintendo; the Gen 1 games are © Nintendo /
-Creatures Inc. / GAME FREAK inc. This is an unofficial fan project that
-ships no ROMs and no copyrighted game content; see [NOTICE.md](NOTICE.md).
+**[free_fly](free_fly/)**: a party member that knows FLY carries you
+around the overworld. Take off anywhere outdoors, fly over trees, water
+and rooftops, cross into neighbouring routes and over the sea, then
+press B to land. You ride the Pokémon you picked, sized by its Pokédex
+height. Story gates and badges are respected by default and everything
+is an option: altitude, speed, badge checks, and a quick-start Pidgey in
+Pallet Town that skips the long wait for HM02.
 
-| Mod | What it does |
-|---|---|
-| [`free_fly`](free_fly/) | Ride a FLY user around the overworld and land wherever you like |
-| [`wild_skies`](wild_skies/) | Flying Pokémon from the encounter tables cross the overworld |
+**[wild_skies](wild_skies/)**: flying Pokémon from each map's encounter
+table cross the overworld with shadows and flapping wings. They land,
+rest, take off, and flush when you run at them; the Zubat line comes out
+at night; sea routes get birds of their own. Low flyers can be caught
+from the ground, high ones are scenery.
+
+**Together**: the sky wild_skies fills becomes somewhere free_fly can
+hunt. Fly into a passing Pidgey and its battle starts mid-air, with the
+species and level it spawned with. Both also play well with the
+[Dramatic Shape Voxel Mod](https://github.com/DramaticShape/DramaticShapeVoxelMod)
+(flight clears rooftops in 3D, first person gets a cockpit view) and
+[Overworld Wild Encounters](https://github.com/gamecorner-033/Gen1PC-OverworldEncounters)
+(roamers on the ground, birds in the air, no crossed wires). Details and
+tested versions are in each mod's README.
 
 ## Install
 
@@ -20,26 +36,11 @@ ships no ROMs and no copyrighted game content; see [NOTICE.md](NOTICE.md).
    Import mod .zip.
 3. Enable the mod in the same menu.
 
-Each mod's own README covers what it does and its options. Updates show
-up in the game's mod manager automatically once a mod is installed.
+Updates show up in the game's mod manager automatically once a mod is
+installed.
 
-## Development
+Contributing or building from source: see [DEVELOPMENT.md](DEVELOPMENT.md).
 
-The repo holds both mods with one shared version number. `shared/` is
-copied into each mod as `lib/shared/` by the scripts, so packed zips are
-self-contained.
-
-```sh
-scripts/dev.sh    # install both mods into the game's save-dir mods folder
-scripts/pack.sh   # validate + pack each mod into dist/<id>-<version>.zip
-```
-
-`dev.sh` targets `~/Library/Application Support/LOVE/pokemon-love2d/mods`
-(override with `GEN1RECOMP_MODS_DIR`) and never writes to a gen1recomp
-checkout. `pack.sh` needs a gen1recomp checkout for modkit (default
-`~/Development/Projects/pokemon/gen1recomp`, override `GEN1RECOMP_DIR`).
-
-Releases: push to `main` (or run the workflow manually) and CI packs
-every mod and publishes one release; the version is the highest manifest
-version, and each asset is named `<id>-<version>.zip`, which is how the
-game's updater picks the right download per installed mod.
+Pokémon is a trademark of Nintendo; the Gen 1 games are © Nintendo /
+Creatures Inc. / GAME FREAK inc. This is an unofficial fan project that
+ships no ROMs and no copyrighted game content; see [NOTICE.md](NOTICE.md).
