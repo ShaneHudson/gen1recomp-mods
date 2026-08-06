@@ -2,6 +2,10 @@
 
 ## unreleased
 
+- Forest sky-life, sparse by design: Viridian Forest gets the ambient
+  pool at one bird at a time with long cooldowns, cruising low to weave
+  between the trunks. The Safari Zone needs no special case: its own
+  encounter slots carry Doduo, so slot spawns work there as anywhere.
 - Flyers survive seamless map crossings: they translate with the same
   coordinate rebase the player gets instead of despawning at the seam.
   Warps and doors still clear the sky as before.

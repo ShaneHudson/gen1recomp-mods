@@ -398,8 +398,10 @@ return function(mod)
 
       cooldown = cooldown - dt
       local d = density()
-      -- ambient (slot-less) skies stay sparser than encounter-fed ones
+      -- ambient (slot-less) skies stay sparser than encounter-fed ones,
+      -- and the forest canopy holds one bird at a time
       local cap = picksCache.ambient and math.max(1, d.cap - 1) or d.cap
+      if picksCache.forest then cap = 1 end
       if cooldown > 0 or #flyers >= cap then return end
       local tod = ow.tod or "DAY"
       local key = ow.map.id .. "#" .. tod
@@ -410,10 +412,12 @@ return function(mod)
         -- ambient skies only where the game itself hosts wildlife: the
         -- map must carry SOME encounter table (sea routes do; towns like
         -- Cinnabar and Pallet don't, and their skies stay quiet)
+        local forest = ow.map.def and ow.map.def.tileset == "FOREST"
+        picksCache.forest = forest or false
         if #picksCache.picks == 0 and ow.map.def
            and Game.data.encounters and Game.data.encounters[ow.map.id]
-           and MapDef.isOutside(ow.map.def,
-                 FieldDefaults.field(Game.data, "outsideTilesets")) then
+           and (forest or MapDef.isOutside(ow.map.def,
+                 FieldDefaults.field(Game.data, "outsideTilesets"))) then
           local pool = tod == "NITE" and AMBIENT_NITE or AMBIENT_DAY
           for _, species in ipairs(pool) do
             picksCache.picks[#picksCache.picks + 1] = { species = species }
@@ -426,10 +430,15 @@ return function(mod)
         cooldown = d.cooldown
         return
       end
-      cooldown = d.cooldown * (picksCache.ambient and 1.8 or 1)
-        + love.math.random() * 6
+      cooldown = d.cooldown * (picksCache.forest and 2.5
+        or picksCache.ambient and 1.8 or 1) + love.math.random() * 6
       local pick = picks[love.math.random(#picks)]
       local flyer = Flyer.new(Game, ow, pick)
+      if flyer and picksCache.forest then
+        -- weave between the trunks, not over the canopy
+        flyer.cruise = math.min(flyer.cruise, 16)
+        if flyer.alt > flyer.cruise then flyer.alt = flyer.cruise end
+      end
       if flyer then
         flyers[#flyers + 1] = flyer
         table.insert(ow.entities, flyer)
