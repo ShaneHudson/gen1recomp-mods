@@ -5,8 +5,11 @@
 - Eligibility fix: a mon that knows FLY qualifies if it can learn HM02 OR
   is FLYING-type. Red/Blue's Charizard cannot learn HM02 (Yellow added
   it), so the strict machine check wrongly hid FREEFLY on it.
-- Keyboard shortcut: F takes off with the first eligible partner and
-  lands while airborne. SHORTCUT KEY F option (default on).
+- Quick Select integration: with jj_quick_select installed (and only
+  then), a FLY WHISTLE key item appears in the bag. Register it to a
+  SELECT+direction slot and it toggles flight: takeoff with the first
+  eligible partner, landing while airborne. Without quick select the
+  whistle does not exist and nothing changes.
 
 ## 1.0.0
 

@@ -38,9 +38,23 @@ return function(mod)
     { key = "badges", label = "BADGE CHECKS", type = "toggle", default = true },
     -- the Pallet Town gift Pidgey; off leaves a fully vanilla start
     { key = "quickstart", label = "QUICK START", type = "toggle", default = true },
-    -- keyboard F: take off with the first eligible partner, or land
-    { key = "shortcut", label = "SHORTCUT KEY F", type = "toggle", default = true },
   })
+
+  -- with jj_quick_select installed (and only then), a FLY WHISTLE key
+  -- item appears in the bag: register it to a SELECT+direction slot and
+  -- flight toggles like the bicycle does.  The optional dependency in
+  -- the manifest orders this mod after quick select, so find() is
+  -- authoritative here.
+  local quickSelect = mod.find("jj_quick_select")
+  if quickSelect then
+    mod.content.items:register("FLY_WHISTLE", {
+      id = "FLY_WHISTLE",
+      name = "FLY WHISTLE",
+      price = 0,
+      keyItem = true,
+      tossable = false,
+    })
+  end
 
   local ALTS = { low = 32, med = 56, high = 80 }
   local SPEEDS = { normal = 8, fast = 6, turbo = 4 }   -- frames per step; bike is 8
@@ -495,40 +509,82 @@ return function(mod)
 
     local MapField = require("src.world.FieldDefaults")
 
-    -- the F shortcut's takeoff: first eligible partner, same gates as
-    -- the FREEFLY menu entry
-    local function shortcutTakeoff(ow)
+    -- takeoff with the first eligible partner: the FLY WHISTLE's action,
+    -- same gates as the FREEFLY menu entry.  Returns ok, failure text.
+    local function partnerTakeoff(ow)
       local save = Game.save
-      if not (save and ow.map and ow.map.def) or ow.player.onBike then return end
+      if not (save and ow.map and ow.map.def) then
+        return false, "Not here."
+      end
+      if ow.player.onBike then
+        return false, "Not while riding\nthe BICYCLE!"
+      end
       if not MapDef.isOutside(ow.map.def,
             MapField.field(Game.data, "outsideTilesets")) then
-        return
+        return false, "There's no open\nsky here!"
       end
       for _, mon in ipairs(save.party or {}) do
         if eligibleFlyer(Game, mon) and badgeOk(Game, mon) then
+          -- unwind any menus so the takeoff starts on the overworld
+          while Game.stack:top() and not Game.stack:top().isOverworld do
+            Game.stack:pop()
+          end
           startFlight(Game, mon)
-          return
+          return true
         end
       end
-      mod.log:info("no FLY-ready partner in the party")
+      return false, "No party member\ncan carry you!"
+    end
+
+    if quickSelect then
+      -- the whistle's behavior lives in the item-use path, so the bag,
+      -- quick select's slots and any other caller all agree
+      local ItemEffects = require("src.inventory.ItemEffects")
+      if not ItemEffects.__freeFlyWrapped then
+        ItemEffects.__freeFlyWrapped = true
+        local origUse = ItemEffects.use
+        ItemEffects.use = function(data, save, itemId, target, battle, moveIndex, ow)
+          local impl = ItemEffects.__freeFlyUse
+          if impl then
+            local kind, messages = impl(itemId, battle)
+            if kind then return kind, messages end
+          end
+          return origUse(data, save, itemId, target, battle, moveIndex, ow)
+        end
+      end
+      ItemEffects.__freeFlyUse = function(itemId, battle)
+        if itemId ~= "FLY_WHISTLE" then return nil end
+        if battle then
+          return "failed", { "This isn't the\ntime to use that!" }
+        end
+        if flying() then
+          state.landRequest = true
+          return "kept", {}
+        end
+        local ow = mod.world and mod.world:overworld()
+        if not ow then
+          return "failed", { "This isn't the\ntime to use that!" }
+        end
+        local ok, why = partnerTakeoff(ow)
+        if ok then return "kept", {} end
+        return "failed", { why }
+      end
+
+      -- the whistle rides the save's bag; hand one over once per save
+      local function grantWhistle()
+        local save = Game.save
+        if save and save.inventory and not save.inventory.FLY_WHISTLE then
+          require("src.inventory.Bag").add(save, "FLY_WHISTLE", 1, Game.data)
+          mod.log:info("FLY WHISTLE added to the bag (quick select found)")
+        end
+      end
+      grantWhistle()
+      mod.events:on("save.loaded", grantWhistle)
     end
 
     OC.__freeFlyTick = function(ow, dt)
       local p = ow.player
       if not p then return end
-      -- keyboard F: take off when grounded, land when flying.  The tick
-      -- only runs while the overworld owns input, so menus never see it.
-      if mod.options:get("shortcut") and love.keyboard then
-        local down = love.keyboard.isDown("f")
-        if down and not state.fHeld then
-          if state.phase == "flying" then
-            state.landRequest = true
-          elseif state.phase == "idle" then
-            shortcutTakeoff(ow)
-          end
-        end
-        state.fHeld = down
-      end
       if not flying() then
         if p.freeFlyAlt then p.freeFlyAlt, p.freeFlying = nil, nil end
         if p.freeFlyWalkSprite then

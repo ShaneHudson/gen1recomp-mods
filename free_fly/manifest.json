@@ -7,7 +7,9 @@
   "category": "MECHANIC",
   "priority": 100,
   "dependencies": [],
-  "optional_dependencies": [],
+  "optional_dependencies": [
+    "jj_quick_select"
+  ],
   "conflicts": [],
   "permissions": [
     "engine_internals"
