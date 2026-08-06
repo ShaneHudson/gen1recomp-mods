@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 (unreleased)
+
+- Voxel: the rooftop compensation is applied instantly instead of eased,
+  which removes the hop the rider did over every fence and small object
+  (the scene snaps its ground height per cell; the ease lagged it).
+- Voxel: visual flight height raised to 75% (was 60%), balanced by one
+  survey-zoom rung out while airborne, restored on landing.
+
 ## 1.1.0
 
 - Eligibility defers to the engine and other mods: the species must be

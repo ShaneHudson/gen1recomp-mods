@@ -676,6 +676,10 @@ return function(mod)
         if p.freeFlyWalkSprite then
           p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
         end
+        if state.zoomedOut then
+          state.zoomedOut = nil
+          pcall(function() Game:zoomStep(1) end)
+        end
         dropRider(ow)
         return
       end
@@ -710,6 +714,10 @@ return function(mod)
         state.alt = math.max(0, state.alt - RISE_SPEED * dt)
         if state.alt <= 0 then
           state.phase = "idle"
+          if state.zoomedOut then
+            state.zoomedOut = nil
+            pcall(function() Game:zoomStep(1) end)
+          end
           -- setting down on water hands you straight to a SURF-knower
           if ow.map:isWaterCell(p.cellX, p.cellY) then
             p.surfing = true
@@ -781,10 +789,17 @@ return function(mod)
       local gh, voxelOn = voxelGroundHeight(ow, p)
       -- the pitched voxel camera makes a high card loom at the lens, so
       -- the visual lift shrinks there; 2D keeps the full height
-      if voxelOn then lift = lift * 0.6 end
-      local target = gh > 0 and math.max(10, lift - gh) or lift
-      local cur = p.freeFlyAlt or 0
-      p.freeFlyAlt = cur + (target - cur) * math.min(1, dt * 10)
+      if voxelOn then lift = lift * 0.75 end
+      -- the compensation must be INSTANT: the scene snaps its ground
+      -- height at each cell boundary, and easing toward the new target
+      -- read as the rider hopping over every fence
+      p.freeFlyAlt = gh > 0 and math.max(10, lift - gh) or lift
+      -- one subtle zoom rung out while airborne keeps the bigger lift
+      -- from reading as a bigger rider
+      if voxelOn and state.phase == "flying" and not state.zoomedOut then
+        state.zoomedOut = true
+        pcall(function() Game:zoomStep(-1) end)
+      end
       -- centre the view (and the tilt-shift focus band) on the bird, not
       -- on the ground point far below it
       ow.camera:follow(p.px, p.py - p.freeFlyAlt,
