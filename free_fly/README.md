@@ -30,6 +30,22 @@ in voxel.
 3. Move as normal. The shadow under you turns green over ground you can
    land on; press the B button (X on keyboard) to set down. Blacking out also grounds you.
 
+### Flying from a shortcut (Quick Select)
+
+With [Quick Select](https://github.com/Roxas2712/pokemon-quick-select)
+installed, this mod adds a FLY WHISTLE key item to your bag:
+
+1. Open the BAG, move the cursor to FLY WHISTLE and press SELECT.
+2. Pick a direction to register it, the same way Quick Select registers
+   any item.
+3. In the overworld, hold SELECT and press that direction: you take off
+   with your first eligible partner, or land if you're already flying.
+
+While you own no BICYCLE, simply tapping SELECT also toggles flight;
+once you get the bicycle, the tap goes back to it and your registered
+direction keeps working for flight. Without Quick Select installed, the
+whistle doesn't exist and nothing changes.
+
 ### The quick-start Pidgey
 
 In vanilla you can't fly until late in the game: HM02 is in the Safari
@@ -85,12 +101,14 @@ overlapping features of their own, so check their changelogs):
   against you while you fly over them; land and everything is vanilla.
 - [wild_skies](../wild_skies): ambient flying Pokémon in the sky, which
   this mod lets you intercept mid-air for a battle.
-- [Quick Select](https://github.com/Roxas2712/pokemon-quick-select): when
-  installed, a FLY WHISTLE key item appears in your bag. Register it to a
-  SELECT+direction slot (the same way you register any item there) and
-  that shortcut toggles flight. While you own no BICYCLE, tap-SELECT
-  itself defaults to flight. Without Quick Select the whistle doesn't
-  exist.
+- [Quick Select](https://github.com/Roxas2712/pokemon-quick-select)
+  (tested with 1.0.1): adds the FLY WHISTLE shortcut flow described
+  above.
+- [QoL Toggles](https://github.com/ShaneMcGovernIE/qol_toggles): its
+  FIELD MOVES ALL setting unlocks FREEFLY (and water landings) on any
+  HM-compatible partner without teaching the move, because this mod asks
+  the engine's own field-move eligibility chain instead of keeping rules
+  of its own.
 
 ## Install
 
