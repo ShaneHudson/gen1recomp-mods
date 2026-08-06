@@ -3,8 +3,10 @@
   speed (crossConnection bypasses tryMove, so it ran one step at walking
   pace: a visible hitch at every seam), and the rider ghost re-attaches
   in the same frame the entity list is rebuilt.
-- Viridian Forest counts as open sky: take off, fly and land under the
-  canopy. Caves and buildings remain no-fly.
+- Viridian Forest and the four Safari Zone areas count as open sky
+  (they share the forest canopy tileset): take off, fly and land there.
+  The Safari Game's step counter keeps ticking while airborne, so flight
+  never grants extra safari time. Caves and buildings remain no-fly.
 
 ## 1.2.0
 

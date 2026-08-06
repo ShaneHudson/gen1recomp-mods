@@ -1187,7 +1187,13 @@ return function(mod)
       OC.__freeFlyStepWrapped = true
       local origStep = OC.onStepComplete
       OC.onStepComplete = function(self, ...)
-        if self.player and self.player.freeFlying then return end
+        if self.player and self.player.freeFlying then
+          -- the Safari Game's step economy still ticks mid-air (the
+          -- FOREST-tileset rule makes its zones flyable, and flight must
+          -- not grant unlimited safari time); no-op outside the safari
+          pcall(function() self:safariStep() end)
+          return
+        end
         return origStep(self, ...)
       end
     end
