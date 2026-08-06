@@ -569,15 +569,26 @@ return function(mod)
       MapLoader.__freeFlyWrapped = true
       local origTrim = MapLoader.trim
       MapLoader.trim = function(protected)
-        local extra = MapLoader.__freeFlyProtected
-        if extra then
-          protected = protected or {}
-          for id in pairs(extra) do protected[id] = true end
-        end
+        local policy = MapLoader.__freeFlyTrimPolicy
+        if policy then return policy(protected, origTrim) end
         return origTrim(protected)
       end
     end
-    MapLoader.__freeFlyProtected = outdoorSet
+    -- indoor maps keep their FULL vanilla cache budget: the resident
+    -- outdoor world never counts against the engine's cap, and eviction
+    -- only happens when indoor maps alone would have exceeded it anyway
+    MapLoader.__freeFlyTrimPolicy = function(protected, origTrim)
+      local indoor = 0
+      for id in pairs(Game.data.maps) do
+        if not outdoorSet[id] and MapLoader.cached(id) then
+          indoor = indoor + 1
+        end
+      end
+      if indoor <= 32 then return end
+      protected = protected or {}
+      for id in pairs(outdoorSet) do protected[id] = true end
+      return origTrim(protected)
+    end
 
     state.prefetchQueue = {}
     for id in pairs(outdoorSet) do
@@ -688,8 +699,17 @@ return function(mod)
         local input = game and game.input
         local inv = game and game.save and game.save.inventory
         local top = game and game.stack and game.stack:top()
+        -- outdoors only: inside, quick select behaves exactly as stock
         local takeover = input and inv and (inv.BICYCLE or 0) <= 0
           and top ~= nil and top.isOverworld
+        if takeover then
+          local ow = top
+          local Map = require("src.world.Map")
+          local FieldDefaults = require("src.world.FieldDefaults")
+          takeover = ow.map and ow.map.def
+            and Map.isOutside(ow.map.def,
+                  FieldDefaults.field(game.data, "outsideTilesets"))
+        end
         if not takeover then
           state.qsArmed, state.qsHeld = nil, nil
           return nextFn(game, dt)
