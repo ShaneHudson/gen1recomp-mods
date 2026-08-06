@@ -2,8 +2,9 @@
 
 ## unreleased
 
-- Voxel: constant cruise kept, a touch lower (62px total, was 66),
-  still clearing every small building; fence-hop immunity unchanged.
+- Voxel: 50px base ride, pushing up to clearance (66px) only while
+  solids sit within two cells of the heading and easing back after;
+  fence-hop immunity unchanged (only the cruise target eases).
 
 ## 1.2.0
 
