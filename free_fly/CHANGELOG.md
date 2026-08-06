@@ -2,6 +2,13 @@
 
 ## unreleased
 
+- Assisted landing: pressing land over a roof, tower facade or anything
+  else unlandable now glides you to the nearest spot you could set down
+  on and lands there, instead of bumping. Dry land beats water, doormats
+  and occupied cells are skipped, and south is tried first so a building
+  tends to drop you at its entrance. Steering, B or another whistle tap
+  cancels the glide; if nothing within twelve cells is landable you get
+  the old bump.
 - Voxel camera, per rung: the follow factor keys on each rung's pitch
   read live from the voxel mod's own angle ladder (which includes FULL
   and the experimental person modes), and the 75-degree orbit lifts to
@@ -14,9 +21,6 @@
 - Quick Select: the "You don't have a BICYCLE" tap message is gone for
   real. Its wrapper arms off the raw press queue after the inner chain
   runs, so the press edge is now consumed at press time, not release.
-
-## unreleased
-
 - Voxel: constant 52px ride. The scene's building volumes cap at 48px,
   so this clears every small building everywhere with no climbs or
   push-ups at all; fence-hop immunity unchanged. Towers stay

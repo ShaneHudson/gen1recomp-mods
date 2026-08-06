@@ -28,7 +28,10 @@ in voxel.
    Yellow made it HM02-compatible.
 2. Open its party submenu and pick FREEFLY.
 3. Move as normal. The shadow under you turns green over ground you can
-   land on; press the B button (X on keyboard) to set down. Blacking out also grounds you.
+   land on; press the B button (X on keyboard) to set down. Over a roof
+   or anywhere else unlandable, the same press glides you to the nearest
+   open spot and lands there (steer or press B again to cancel the
+   glide). Blacking out also grounds you.
 
 ### Flying from a shortcut (Quick Select)
 
