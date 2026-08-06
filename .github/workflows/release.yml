@@ -1,0 +1,180 @@
+name: Release
+
+# Packs every mod into its own installable .zip and publishes them together
+# as ONE GitHub Release per version. The launcher's updater matches assets
+# by "<id>-<version>.zip", so each installed mod picks its own download
+# from the shared release (src/mods/ModUpdate.lua pickZipAsset).
+#
+# Versions are lockstep across the monorepo: the release version is the
+# highest manifest version, or a "[release X.Y.Z]" commit-message override,
+# or the manual run's input. Every packed manifest is stamped with it.
+#
+# Adapted from the single-mod workflow gen1recomp's
+# `modkit add-release-workflow` generates.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact version to release (e.g. 1.0.0). Blank = auto."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  MODS: "free_fly wild_skies"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: ver
+        env:
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, re, subprocess, sys
+
+          SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
+          def sh(*args):
+              return subprocess.run(args, capture_output=True, text=True).stdout.strip()
+
+          def parse(text):
+              m = SEMVER.match(text)
+              return tuple(int(p) for p in m.groups()) if m else None
+
+          def die(msg):
+              print(f"::error::{msg}", file=sys.stderr)
+              raise SystemExit(1)
+
+          mods = os.environ.get("MODS", "").split()
+          manifest_vers = []
+          for mod in mods:
+              with open(f"{mod}/manifest.json", encoding="utf-8") as fh:
+                  v = parse(str(json.load(fh).get("version", "")))
+                  if v: manifest_vers.append(v)
+          manifest_ver = max(manifest_vers) if manifest_vers else None
+
+          released = sorted(
+              v for v in (parse(t[1:]) for t in sh("git", "tag", "-l", "v*").splitlines()) if v
+          )
+          latest = released[-1] if released else None
+
+          override = os.environ.get("DISPATCH_VERSION", "").strip()
+          if not override:
+              found = re.search(r"\[release\s+(\d+\.\d+\.\d+)\]",
+                                sh("git", "log", "-1", "--pretty=%B"))
+              override = found.group(1) if found else ""
+
+          if override:
+              version = parse(override) or die(f"invalid override {override!r}")
+          elif manifest_ver and (latest is None or manifest_ver > latest):
+              version = manifest_ver
+          elif latest:
+              major, minor, patch = latest
+              patch += 1
+              if patch > 99:
+                  minor, patch = minor + 1, 0
+              version = (major, minor, patch)
+          else:
+              die("no usable manifest version and no vX.Y.Z tag to count from")
+
+          text = "%d.%d.%d" % version
+          print(f"version={text}")
+          print(f"tag=v{text}")
+          PY
+
+      - name: Refuse to clobber an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists."; exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists."; exit 1
+          fi
+
+      - name: Build the mod zips
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/dist"
+          rm -rf "$out"; mkdir -p "$out"
+
+          for mod in $MODS; do
+            staging="$RUNNER_TEMP/pkg-$mod"
+            rm -rf "$staging"; mkdir -p "$staging"
+            git archive HEAD "$mod" | tar -x --strip-components=1 -C "$staging"
+
+            # pack-time shared code, if any lands in shared/
+            if [ -d shared ] && [ -n "$(ls -A shared 2>/dev/null | grep -v README || true)" ]; then
+              mkdir -p "$staging/lib/shared"
+              rsync -a --exclude 'README*' shared/ "$staging/lib/shared/"
+            fi
+
+            # tests never ship
+            rm -rf "$staging/tests" "$staging/.modkitignore"
+
+            python3 - "$staging/manifest.json" "$VERSION" <<'PY'
+          import json, sys
+          path, version = sys.argv[1], sys.argv[2]
+          with open(path, encoding="utf-8") as fh:
+              manifest = json.load(fh)
+          manifest["version"] = version
+          with open(path, "w", encoding="utf-8") as fh:
+              json.dump(manifest, fh, indent=2, ensure_ascii=False)
+              fh.write("\n")
+          PY
+
+            zip_path="$out/${mod}-${VERSION}.zip"
+            (cd "$staging" && zip -qr "$zip_path" .)
+            unzip -l "$zip_path" | head -5
+          done
+
+          (cd "$out" && sha256sum ./*.zip > sha256sums.txt && cat sha256sums.txt)
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          prev="$(git tag -l 'v*' --sort=-v:refname | grep -v "^${TAG}$" | head -1 || true)"
+          range="${prev:+${prev}..}$GITHUB_SHA"
+          changes="$(git log --no-merges --pretty='- %s' "$range" | head -50 || true)"
+
+          notes=$'Download a mod .zip and install it from the game: MODS > Import mod .zip.'
+          if [ -n "$changes" ]; then
+            notes+=$'\n\n## Changes\n\n'"$changes"
+          fi
+
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --notes "$notes" \
+            dist/*.zip dist/sha256sums.txt
+          echo "Published $TAG"

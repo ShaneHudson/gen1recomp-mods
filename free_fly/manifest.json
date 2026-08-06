@@ -1,0 +1,18 @@
+{
+  "id": "free_fly",
+  "name": "Free Fly",
+  "version": "0.9.2",
+  "entry": "main.lua",
+  "api": 2,
+  "category": "MECHANIC",
+  "priority": 100,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "permissions": [
+    "engine_internals"
+  ],
+  "game_version": "0.0.0-dev || >=0.1.0 <2.0.0",
+  "description": "A party member that knows FLY can take off and free-roam over the overworld, then land anywhere walkable.",
+  "github": "ShaneHudson/gen1recomp-mods"
+}

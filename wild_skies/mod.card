@@ -1,0 +1,18 @@
+return {
+  summary   = "Ambient flying Pokémon cross the map overhead, Let's Go style.",
+  author    = "Shane Hudson",
+  tags      = { "overworld", "ambient", "cosmetic", "lets-go" },
+  differences = {
+    changed = {},
+    added = {
+      "FLYING species from the map's grass slots fly across with a shadow",
+    },
+    known = {
+      "icon-only classes (bug/plant/quadruped/snake) ride the bird look",
+      "battles only via free_fly's aerial interception",
+      "voxel mode shows flyers as billboards with altitude (lightly tested)",
+    },
+  },
+  credits = {},
+  compat  = { engine = "0.0.0-dev || >=0.1.0 <2.0.0", modApi = 2 },
+}

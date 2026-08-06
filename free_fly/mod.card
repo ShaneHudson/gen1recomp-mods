@@ -1,0 +1,25 @@
+return {
+  summary   = "Ride a FLY user: take off, soar anywhere (water included), B to land.",
+  author    = "Shane Hudson",
+  tags      = { "mechanic", "overworld", "fly", "quality-of-life" },
+  differences = {
+    changed = {
+      "party submenu gains FREEFLY on FLY users (outdoors; no badge needed)",
+      "while airborne: collision off, warps and trainer sight gated, encounters filtered to FLYING species, saving vetoed",
+      "map-seam landing checks pass while airborne, so flight crosses onto water maps",
+    },
+    added = {
+      "a Pidgey in Pallet Town joins at L10 knowing FLY (one per save)",
+      "riding visuals: bird mount + player top half from the player's cache, shadow, flap",
+      "aerial interception of wild_skies flyers (optional dep, via its exports)",
+      "options: altitude, fly speed, air encounters, trainer sight",
+    },
+    known = {
+      "voxel mode: the rider draws as the full standing figure above the bird, not a seated crop",
+      "ledge hop animation can double with the flight lift",
+      "link play untested while airborne",
+    },
+  },
+  credits = {},
+  compat  = { engine = "0.0.0-dev || >=0.1.0 <2.0.0", modApi = 2 },
+}

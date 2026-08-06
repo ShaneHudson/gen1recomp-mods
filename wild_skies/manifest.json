@@ -1,0 +1,18 @@
+{
+  "id": "wild_skies",
+  "name": "Wild Skies",
+  "version": "0.3.1",
+  "entry": "main.lua",
+  "api": 2,
+  "category": "MECHANIC",
+  "priority": 110,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "permissions": [
+    "engine_internals"
+  ],
+  "game_version": "0.0.0-dev || >=0.1.0 <2.0.0",
+  "description": "Ambient flying Pokémon from the local encounter table visibly fly across routes, with shadows and a bobbing flight path.",
+  "github": "ShaneHudson/gen1recomp-mods"
+}

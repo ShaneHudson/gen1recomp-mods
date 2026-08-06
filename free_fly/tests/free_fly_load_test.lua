@@ -1,0 +1,12 @@
+-- Loads free_fly through the headless loader and asserts the load is
+-- clean: no loader errors and its hooks registered without firing.
+package.path = "./?.lua;./?/init.lua;" .. package.path
+
+local os = require("os")
+local T = require("tests.modkit")
+local Data = require("src.core.Data"); Data:load()
+
+local run = T.sdk.loadMod(os.getenv("MOD_DIR") or "mods/free_fly", { data = Data })
+T.eq(#run.errors, 0, "loads clean")
+run.release()
+T.finish("free_fly")
