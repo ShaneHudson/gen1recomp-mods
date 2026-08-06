@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.3
+
+- While airborne, the only wild battle that can start is one this mod
+  asked for (interception). Ground roamers from other mods
+  (overworld_encounters) collide by ground cell and were battling
+  overflying players; their battles are now gated at BattleState.newWild
+  until you land.
+
 ## 0.11.2
 
 - Cockpit view keys off FirstPerson.hidePlayer() (true only when the eye

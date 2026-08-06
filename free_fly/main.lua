@@ -558,6 +558,7 @@ return function(mod)
             local ok, hit = pcall(take, p.cellX, p.cellY, 1)
             if ok and hit and hit.species then
               state.interceptCooldown = 2
+              state.expectBattle = 4
               pcall(function()
                 require("src.core.Sound").playCry(Game.data, hit.species)
               end)
@@ -569,6 +570,8 @@ return function(mod)
           end
         end
       end
+      state.expectBattle = (state.expectBattle and state.expectBattle > dt)
+        and (state.expectBattle - dt) or nil
       state.windCooldown = math.max(0, (state.windCooldown or 0) - dt)
       -- TURN BACK is never remembered: once this expires the next push
       -- into the seam asks again, until the player says CROSS
@@ -671,6 +674,29 @@ return function(mod)
         return origForced(self, ...)
       end
     end
+
+    -- other mods (overworld_encounters' ground roamers above all) start
+    -- wild battles by ground-cell collision and know nothing about
+    -- altitude.  While airborne, the only wild battle allowed to start is
+    -- one this mod just asked for (interception); everything else is a
+    -- ground creature the flyer passes over.
+    local BattleState = require("src.battle.BattleState")
+    if not BattleState.__freeFlyWrapped then
+      BattleState.__freeFlyWrapped = true
+      local origNewWild = BattleState.newWild
+      BattleState.newWild = function(...)
+        local gate = BattleState.__freeFlyGate
+        if gate and gate() then return nil end
+        return origNewWild(...)
+      end
+    end
+    BattleState.__freeFlyGate = function()
+      return flying() and not state.expectBattle
+    end
+
+    mod.events:on("battle.started", function()
+      state.expectBattle = nil
+    end)
 
     -- completed-step reactions (locked-door step scripts, gate guards,
     -- spinner tiles, poison ticks) belong to walkers; an airborne step
