@@ -10,6 +10,8 @@ TARGET="${GEN1RECOMP_MODS_DIR:-$HOME/Library/Application Support/LOVE/pokemon-lo
 mkdir -p "$TARGET"
 
 for mod in free_fly wild_skies; do
+  mkdir -p "$ROOT/$mod/lib/shared"
+  rsync -a --delete --exclude 'README*' "$ROOT/shared/" "$ROOT/$mod/lib/shared/"
   rsync -a --delete --exclude '.git' "$ROOT/$mod/" "$TARGET/$mod/"
   echo "installed $mod -> $TARGET/$mod"
 done

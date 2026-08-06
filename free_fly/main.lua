@@ -8,6 +8,19 @@
 -- engine_internals.  Every wrap is guarded and keeps its live logic on the
 -- module table so F5 hot reload swaps behavior without double-wrapping.
 return function(mod)
+  -- shared helpers, synced in as lib/shared/ by the monorepo's scripts
+  local function loadShared(file)
+    local src = mod:read("lib/shared/" .. file)
+    if not src then return nil end
+    return assert((loadstring or load)(src, "@free_fly/lib/shared/" .. file))()
+  end
+  local Sky = loadShared("skylib.lua")
+  if not Sky then
+    mod.log:error("lib/shared/skylib.lua is missing -- run scripts/dev.sh "
+      .. "in the gen1recomp-mods repo to sync shared code; mod disabled")
+    return
+  end
+
   local RISE_SPEED = 72       -- px/s takeoff and landing lerp
 
   mod.options:define({
@@ -60,14 +73,7 @@ return function(mod)
   end
   function Rider:draw() end
 
-  local function knowsMove(mon, moveId)
-    for _, mv in ipairs(mon and mon.moves or {}) do
-      if (type(mv) == "table" and mv.id or mv) == moveId then return true end
-    end
-    return false
-  end
-
-  local function knowsFly(mon) return knowsMove(mon, "FLY") end
+  local function knowsFly(mon) return Sky.knowsMove(mon, "FLY") end
 
   -- HM02 compatibility: the species' tmhm list is the same one the
   -- machine-teach path checks, so eligibility exactly matches "could this
@@ -82,7 +88,7 @@ return function(mod)
 
   local function partyKnowsSurf(save)
     for _, mon in ipairs(save and save.party or {}) do
-      if knowsMove(mon, "SURF") then return true end
+      if Sky.knowsMove(mon, "SURF") then return true end
     end
     return false
   end
@@ -123,10 +129,7 @@ return function(mod)
     if not (enc and flying()) then return enc end
     if not mod.options:get("encounters") then return nil end
     local game = require("src.core.Game")
-    local def = game.data and game.data.pokemon[enc.species]
-    for _, t in ipairs((def and def.types) or {}) do
-      if t == "FLYING" then return enc end
-    end
+    if Sky.hasType(game.data, enc.species, "FLYING") then return enc end
     return nil
   end)
 
@@ -662,38 +665,15 @@ return function(mod)
     end
 
     -- mount identity: the chosen mon's party-icon class maps onto a real
-    -- walker sheet where one exists (bird/monster/seel/fairy), so a
-    -- Charizard carries you as the monster sprite and a Pidgey as the
-    -- bird.  Icon-only classes (bug/plant/quadruped/snake) keep the bird.
-    local MOUNT_BY_CLASS = {
-      BIRD = "SPRITE_BIRD", MON = "SPRITE_MONSTER",
-      WATER = "SPRITE_SEEL", FAIRY = "SPRITE_FAIRY",
-      PIKACHU = "SPRITE_FAIRY",
-    }
-    local mountCache = {}
+    -- walker sheet where one exists (bird/monster/seel/fairy), sized by
+    -- its dex height.  Icon-only classes keep the bird.
     state.resolveMount = function(mon)
-      local mount = Player.__freeFlyBird
       local species = mon and mon.species
-      if species then
-        local icons = Game.data.icons or {}
-        local def = Game.data.pokemon[species]
-        local entry = (icons.bySpecies and icons.bySpecies[species])
-                   or (def and def.icon)
-                   or (def and def.dex and icons.byDex and icons.byDex[def.dex])
-        local spriteId = type(entry) == "string" and MOUNT_BY_CLASS[entry]
-        local spriteDef = spriteId and Game.data.sprites[spriteId]
-        if spriteDef then
-          mountCache[spriteId] = mountCache[spriteId]
-            or SpriteRenderer.new(spriteDef, "free_fly_mount_" .. spriteId)
-          mount = mountCache[spriteId]
-        end
-      end
-      -- dex height sizes the mount: a Charizard dwarfs a Pidgey
-      local dex = (species and Game.data.pokemon[species]
-                   and Game.data.pokemon[species].dexEntry) or {}
-      local feet = (dex.heightFt or 2) + (dex.heightIn or 0) / 12
-      Player.__freeFlyMountScale = math.max(0.85, math.min(1.6, 0.75 + feet * 0.14))
-      Player.__freeFlyMount = mount
+      Player.__freeFlyMount = (species
+        and Sky.mountSprite(Game.data, species, "free_fly"))
+        or Player.__freeFlyBird
+      Player.__freeFlyMountScale = species
+        and Sky.dexScale(Game.data, species) or 1
     end
 
     -- crossConnection re-validates the landing tile on the neighbor map

@@ -9,6 +9,19 @@
 -- but kept out of the NPC list, so scripts and talk targeting never see
 -- them.  All art is the player's own imported cache; nothing ships.
 return function(mod)
+  -- shared helpers, synced in as lib/shared/ by the monorepo's scripts
+  local function loadShared(file)
+    local src = mod:read("lib/shared/" .. file)
+    if not src then return nil end
+    return assert((loadstring or load)(src, "@wild_skies/lib/shared/" .. file))()
+  end
+  local Sky = loadShared("skylib.lua")
+  if not Sky then
+    mod.log:error("lib/shared/skylib.lua is missing -- run scripts/dev.sh "
+      .. "in the gen1recomp-mods repo to sync shared code; mod disabled")
+    return
+  end
+
   mod.options:define({
     { key = "density", label = "SKY DENSITY", type = "choice", default = "med",
       choices = { { "LOW", "low" }, { "MED", "med" }, { "HIGH", "high" } } },
@@ -24,11 +37,7 @@ return function(mod)
   end
 
   -- flight character per party-icon class; classes without a walker sheet
-  -- ride the bird look
-  local CLASS_SPRITES = {
-    BIRD = "SPRITE_BIRD", MON = "SPRITE_MONSTER",
-    WATER = "SPRITE_SEEL", FAIRY = "SPRITE_FAIRY", PIKACHU = "SPRITE_FAIRY",
-  }
+  -- ride the bird look (sheet resolution lives in shared skylib)
   local CLASS_PROFILE = {
     BIRD  = { speed = { 30, 46 }, alt = { 16, 24 }, flap = 8, bob = 2 },
     MON   = { speed = { 22, 34 }, alt = { 12, 18 }, flap = 5, bob = 3 },
@@ -91,17 +100,6 @@ return function(mod)
     return { species = f.species, level = f.level }
   end
 
-  -- same resolution the party menu uses: bySpecies override, the pokemon
-  -- record's own icon, then the dex-indexed default
-  local function iconClassOf(game, species)
-    local icons = game.data.icons or {}
-    local def = game.data.pokemon[species]
-    local entry = (icons.bySpecies and icons.bySpecies[species])
-               or (def and def.icon)
-               or (def and def.dex and icons.byDex and icons.byDex[def.dex])
-    return type(entry) == "string" and entry or nil
-  end
-
   -- the map's grass slots, filtered to FLYING types and the time of day:
   -- night-only species own the night sky and sit out the daylight
   local function flyingSlots(game, mapId, tod)
@@ -109,16 +107,12 @@ return function(mod)
     local encDef = game.data.encounters and game.data.encounters[mapId]
     local slots = encDef and encDef.grass and encDef.grass.slots
     for _, slot in ipairs(slots or {}) do
-      local def = game.data.pokemon[slot.species]
-      for _, t in ipairs((def and def.types) or {}) do
-        if t == "FLYING" then
-          local pick = { species = slot.species, level = slot.level }
-          if NIGHT_ONLY[slot.species] then
-            night[#night + 1] = pick
-          else
-            all[#all + 1] = pick
-          end
-          break
+      if Sky.hasType(game.data, slot.species, "FLYING") then
+        local pick = { species = slot.species, level = slot.level }
+        if NIGHT_ONLY[slot.species] then
+          night[#night + 1] = pick
+        else
+          all[#all + 1] = pick
         end
       end
     end
@@ -131,17 +125,9 @@ return function(mod)
   local Flyer = {}
   Flyer.__index = Flyer
 
-  local mountCache = {}
   local function mountFor(game, species)
-    local class = iconClassOf(game, species)
-    local spriteId = (class and CLASS_SPRITES[class]) or "SPRITE_BIRD"
-    local def = game.data.sprites[spriteId]
-    if not def then return nil, DEFAULT_PROFILE end
-    if not mountCache[spriteId] then
-      local SpriteRenderer = require("src.render.SpriteRenderer")
-      mountCache[spriteId] = SpriteRenderer.new(def, "wild_skies_" .. spriteId)
-    end
-    return mountCache[spriteId], CLASS_PROFILE[class] or DEFAULT_PROFILE
+    local sprite, class = Sky.mountSprite(game.data, species, "wild_skies")
+    return sprite, CLASS_PROFILE[class] or DEFAULT_PROFILE
   end
 
   function Flyer.new(game, ow, pick)
@@ -156,9 +142,7 @@ return function(mod)
     self.flap = profile.flap
     self.bobAmp = profile.bob
     -- dex height sets the on-screen size: Pidgey small, Charizard big
-    local dex = (game.data.pokemon[pick.species] or {}).dexEntry or {}
-    local feet = (dex.heightFt or 2) + (dex.heightIn or 0) / 12
-    self.scale = math.max(0.85, math.min(1.6, 0.75 + feet * 0.14))
+    self.scale = Sky.dexScale(game.data, pick.species)
 
     -- glide in from just past the camera's near edge, crossing the view;
     -- clamped to the map, so at a world edge the entry is the edge itself

@@ -12,6 +12,8 @@ MODKIT="$GAME/tools/modkit.py"
 mkdir -p "$ROOT/dist"
 
 for mod in free_fly wild_skies; do
+  mkdir -p "$ROOT/$mod/lib/shared"
+  rsync -a --delete --exclude 'README*' "$ROOT/shared/" "$ROOT/$mod/lib/shared/"
   version="$(python3 -c "import json;print(json.load(open('$ROOT/$mod/manifest.json'))['version'])")"
   python3 "$MODKIT" validate "$ROOT/$mod" --repo "$GAME" --base imported
   python3 "$MODKIT" pack "$ROOT/$mod" --repo "$GAME" \

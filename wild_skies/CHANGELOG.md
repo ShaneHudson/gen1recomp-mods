@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Shared helpers (icon-class mounts, dex scale, type/move checks) moved
+  to the monorepo's shared/skylib.lua, synced in as lib/shared/. No
+  behavior change.
+
 ## 0.3.1
 
 - Flyers are sized by their dex height (scaled 0.85x-1.6x around the foot

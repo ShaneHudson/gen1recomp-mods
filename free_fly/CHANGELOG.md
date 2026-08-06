@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.4
+
+- Shared helpers (icon-class mounts, dex scale, type/move checks) moved
+  to the monorepo's shared/skylib.lua, synced in as lib/shared/. No
+  behavior change.
+
 ## 0.9.3
 
 - Fix: the sea-crossing ask's cooldown never decayed, so answering TURN
