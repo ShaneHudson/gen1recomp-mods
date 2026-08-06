@@ -31,7 +31,8 @@
   their roofs; walking out onto a roof and taking off still works.
 - Performance: the whole outdoor world stays resident while you fly.
   All 36 outdoor maps (under a megabyte of block data) are warmed once
-  at one load per tick and marked protected from the engine's cache
+  at one load per six ticks (always yielding the frame to the voxel
+  mod's own mesh builds) and marked protected from the engine's cache
   eviction, so seam crossings never load anything and the LRU churn that
   dragged the Cycling Road corridor down is gone entirely. Indoor
   spaces are untouched by this mod on principle: they keep their FULL

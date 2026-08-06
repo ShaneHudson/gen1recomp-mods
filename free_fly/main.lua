@@ -597,10 +597,27 @@ return function(mod)
       end
     end
 
+    local function mesherBusy()
+      if state.mesherRef == nil then
+        state.mesherRef = false
+        local exports = Game.mods and Game.mods.exports
+        local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
+        local ok, cm = pcall(function() return V and V.require("ChunkMesher") end)
+        if ok and cm and cm.pending then state.mesherRef = cm end
+      end
+      if not state.mesherRef then return false end
+      local ok, n = pcall(state.mesherRef.pending)
+      return ok and (n or 0) > 0
+    end
+
     local function tickPrefetch()
+      if #state.prefetchQueue == 0 then return end
+      -- throttled, and it always yields the frame to the voxel mesher:
+      -- its arrival builds matter more than our cache warm
+      state.prefetchTick = ((state.prefetchTick or 0) + 1) % 6
+      if state.prefetchTick ~= 0 or mesherBusy() then return end
       local id = table.remove(state.prefetchQueue)
       if not id then return end
-      -- engine map cache only; the voxel scene meshes its own neighbours
       local okLoad = pcall(MapLoader.load, Game.data, id)
       if not okLoad then state.prefetchQueue = {} end
     end
