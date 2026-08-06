@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased
+## 1.2.0
 
 - Forest sky-life, sparse by design: Viridian Forest gets the ambient
   pool at one bird at a time with long cooldowns, cruising low to weave

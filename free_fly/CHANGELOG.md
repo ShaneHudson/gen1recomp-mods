@@ -1,4 +1,7 @@
 # Changelog
+
+## 1.2.0
+
 - Seam smoothness while flying: the crossing step now keeps flight
   speed (crossConnection bypasses tryMove, so it ran one step at walking
   pace: a visible hitch at every seam), and the rider ghost re-attaches
@@ -7,8 +10,6 @@
   (they share the forest canopy tileset): take off, fly and land there.
   The Safari Game's step counter keeps ticking while airborne, so flight
   never grants extra safari time. Caves and buildings remain no-fly.
-
-## 1.2.0
 
 - Voxel: the rooftop compensation is applied instantly instead of eased,
   which removes the hop the rider did over every fence and small object

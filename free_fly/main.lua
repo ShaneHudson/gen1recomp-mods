@@ -371,9 +371,15 @@ return function(mod)
     local out = next(game, vp)
     if not flying() then return out end
     local ok, err = pcall(function()
-      local exports = game.mods and game.mods.exports
-      local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
-      local FP = V and V.require and V.require("FirstPerson")
+      -- resolved once, not per frame
+      if state.fpRef == nil then
+        state.fpRef = false
+        local exports = game.mods and game.mods.exports
+        local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
+        local okFP, fp = pcall(function() return V and V.require("FirstPerson") end)
+        if okFP and fp then state.fpRef = fp end
+      end
+      local FP = state.fpRef
       -- hidePlayer() is true exactly when the first-person eye hides the
       -- player's card -- the one situation a rider needs a cockpit view
       -- (third person keeps showing the mount card itself)
