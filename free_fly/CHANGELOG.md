@@ -15,8 +15,11 @@
   meshes.
 - Ledges no longer hijack an airborne step into the vanilla hop (the
   arc used to stack on the flight lift); a flyer just crosses them.
-- Voxel: visual flight height raised to 75% (was 60%), balanced by one
-  survey-zoom rung out while airborne, restored on landing.
+- Voxel: visual flight height raised to 75% (was 60%), balanced by the
+  camera tracking only part of the lift so the rider reads smaller and
+  further away. An earlier build used a real zoom rung for this, which
+  enlarged the rendered chunk set and stepped up the shadow-map
+  resolution: that was the building lag while airborne, and it's gone.
 
 ## 1.1.0
 
