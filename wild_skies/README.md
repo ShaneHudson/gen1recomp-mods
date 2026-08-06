@@ -1,20 +1,18 @@
 # Wild Skies
 
-The sky over Kanto is alive. Flying Pokémon from each map's own
-encounter table visibly cross the overworld: shadows tracking on the
-ground, wings flapping, sized by their Pokédex height. Pidgey and
-Spearow sweep the early routes, Fearow rides high with a faded distant
-shadow, and after dark the Zubat line takes over. Sea routes get a
-sparse gull-life of their own even though their encounter slots hold no
-flyers.
+Adds flying Pokémon to the overworld. Species come from each map's own
+encounter table, so Pidgey and Spearow cross the early routes and the
+Zubat line comes out at night. They cast shadows, flap their wings, and
+are sized by their Pokédex height. Sea routes get a few birds too, even
+though their encounter slots have no flyers.
 
-They behave like birds, not screensavers: most cross the whole view,
-some descend mid-flight to rest on the grass before moving on, and some
-start perched in a field and flush away when you run at them. Corner a
-low one fast enough and it turns into a real wild battle (its actual
-species and level); anything cruising high is safe scenery from the
-ground. With [free_fly](../free_fly) installed, you can chase the sky
-itself: brushing a flyer mid-air starts its battle.
+Flyers vary their behaviour: most cross the screen and leave, some land
+on the grass for a few seconds before moving on, and some start perched
+on the ground and fly off when you get close. If you reach a low one
+before it gets away, a normal wild battle starts with that species and
+level. High flyers never trigger battles from the ground. If you also
+have [free_fly](../free_fly) installed, flying into one starts its
+battle mid-air.
 
 ## Options
 
@@ -29,12 +27,10 @@ Tested alongside these, with the versions noted (later versions may add
 overlapping features of their own, so check their changelogs):
 
 - [Overworld Wild Encounters](https://github.com/gamecorner-033/Gen1PC-OverworldEncounters)
-  (tested with 0.0.5): the natural companion. It fills the ground with
-  visible roaming Pokémon while this mod fills the sky, and the flyers'
-  landings and takeoffs read as part of the same living ecosystem: a
-  bird settling in the grass beside its roamers, then lifting off again.
-  Battles stay cleanly separated: its roamers own the ground game, this
-  mod's birds own the air.
+  (tested with 0.0.5): recommended. It puts visible roaming Pokémon on
+  the ground while this mod handles the sky, and the flyers landing and
+  taking off fit right in alongside its roamers. Battles don't overlap:
+  its roamers handle the ground, this mod's birds handle the air.
 - [Dramatic Shape Voxel Mod](https://github.com/DramaticShape/DramaticShapeVoxelMod)
   (tested with 1.6.0): flyers billboard in the 3D diorama with real
   altitude.
@@ -42,8 +38,8 @@ overlapping features of their own, so check their changelogs):
   mount-riding flight this mod's birds share their sky with.
 
 For a full mount system (controllable flying, ground and surf mounts),
-see [Dramatic Sky Ride](https://github.com/mfrtechconsult/dramatic-sky-ride);
-this mod deliberately stays ambient.
+see [Dramatic Sky Ride](https://github.com/mfrtechconsult/dramatic-sky-ride).
+This mod only adds ambient wildlife.
 
 ## For mod authors
 
@@ -54,10 +50,13 @@ to reach into this mod's internals.
 
 ## Install
 
-Grab `wild_skies-<version>.zip` from
-[releases](https://github.com/ShaneHudson/gen1recomp-mods/releases) and
-import it in game: MODS > Import mod .zip. Updates then appear in the
-mod manager automatically.
+1. Download `wild_skies-<version>.zip` from the
+   [releases page](https://github.com/ShaneHudson/gen1recomp-mods/releases).
+2. In the game, open MODS from the pause menu (or press F10) and pick
+   Import mod .zip.
+3. Enable the mod in the same menu.
+
+Updates show up in the mod manager automatically once installed.
 
 Known rough edges are listed in `mod.card`.
 

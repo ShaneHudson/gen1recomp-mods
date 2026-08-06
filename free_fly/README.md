@@ -1,17 +1,18 @@
 # Free Fly
 
-Ride a party member that knows FLY, freely. Take off anywhere outdoors,
-soar over trees, water, fences and rooftops, cross route seams (the sea
-included), and press B over open ground to land. That is the whole mod:
-free flight, done carefully, with no dependencies.
+Lets a party member that knows FLY carry you around the overworld. Take
+off anywhere outdoors, fly over trees, water, fences and rooftops, cross
+into neighbouring routes (the sea included), and press B over open
+ground to land. That's the whole mod: free flight, no dependencies.
 
 Looking for a bigger mount system? Check out
 [Dramatic Sky Ride](https://github.com/mfrtechconsult/dramatic-sky-ride):
 it adds controllable flying, ground and surf mounts with stamina, boost
 and airborne battles, and it depends on the
 [Dramatic Shape Voxel Mod](https://github.com/DramaticShape/DramaticShapeVoxelMod)
-plus a follower-sprite provider. Free Fly is the minimal alternative: one
-mechanic, no dependencies, works in the flat 2D game and in voxel alike.
+plus a follower-sprite provider. Free Fly is the small alternative: one
+mechanic, no dependencies, and it works in the flat 2D game as well as
+in voxel.
 
 ## Getting airborne
 
@@ -23,13 +24,13 @@ mechanic, no dependencies, works in the flat 2D game and in voxel alike.
 
 ### The quick-start Pidgey
 
-Vanilla makes you wait a long time for flight: HM02 sits in the Safari
-Zone and FLY normally wants the THUNDERBADGE. As an optional shortcut, a
-Pidgey waits in the middle of Pallet Town. Talk to it and it joins at
-L10 already knowing FLY, exempt from the badge check, so you can fly
-from the first minutes of a new game. One per save. If you'd rather earn
-flight the long way, turn QUICK START off in the mod's options and the
-bird never appears.
+In vanilla you can't fly until late in the game: HM02 is in the Safari
+Zone and using FLY needs the THUNDERBADGE. As an optional shortcut, a
+Pidgey stands in the middle of Pallet Town. Talk to it and it joins at
+L10 already knowing FLY, and it skips the badge check, so you can fly
+from the start of a new game. One per save. If you'd rather earn flight
+normally, turn QUICK START off in the mod's options and the Pidgey never
+appears.
 
 ## Options
 
@@ -79,10 +80,13 @@ overlapping features of their own, so check their changelogs):
 
 ## Install
 
-Grab `free_fly-<version>.zip` from
-[releases](https://github.com/ShaneHudson/gen1recomp-mods/releases) and
-import it in game: MODS > Import mod .zip. Updates then appear in the
-mod manager automatically.
+1. Download `free_fly-<version>.zip` from the
+   [releases page](https://github.com/ShaneHudson/gen1recomp-mods/releases).
+2. In the game, open MODS from the pause menu (or press F10) and pick
+   Import mod .zip.
+3. Enable the mod in the same menu.
+
+Updates show up in the mod manager automatically once installed.
 
 Known rough edges are listed in `mod.card`.
 
