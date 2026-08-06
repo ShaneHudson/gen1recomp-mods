@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0
+
+- Voxel first/third person: movement works airborne (their FreeMove runs
+  its own collision, now wrapped with a flight-scoped permissive window),
+  and the mount is visible because it becomes the player's sprite sheet
+  for the flight's duration; the walking sheet returns on landing.
+- Hard guarantee against indoor flight: entering any non-outside map
+  (caves included) while airborne ends the flight on arrival, on top of
+  the existing takeoff and door gates.
+
 ## 0.9.6
 
 - Flying over the Cycling Road no longer triggers the "You need a

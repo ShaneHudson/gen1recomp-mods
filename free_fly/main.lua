@@ -69,7 +69,9 @@ return function(mod)
   function Rider:pose()
     local p = self.player
     local lift = math.floor((p.freeFlyAlt or 0) + 0.5)
-    return p.sprite, p.px, p.py - lift - 6, p.facing, 0, false, false
+    -- always the WALKING sheet: while airborne p.sprite is the mount
+    return p.freeFlyWalkSprite or p.sprite, p.px, p.py - lift - 6,
+           p.facing, 0, false, false
   end
   function Rider:draw() end
 
@@ -282,6 +284,21 @@ return function(mod)
   mod.events:on("map.entered", function(ev)
     state.pidgeyNpcId = nil
     if ev and ev.mapId == "PALLET_TOWN" then spawnPidgey() end
+    -- hard guarantee: there is no indoor flight.  Whatever path leads
+    -- into a cave or building while airborne, the flight ends on arrival.
+    if flying() then
+      local ow = mod.world and mod.world:overworld()
+      if ow and ow.map and ow.map.def then
+        local Map = require("src.world.Map")
+        local FieldDefaults = require("src.world.FieldDefaults")
+        local game = require("src.core.Game")
+        if not Map.isOutside(ow.map.def,
+              FieldDefaults.field(game.data, "outsideTilesets")) then
+          state.phase, state.alt = "idle", 0
+          mod.log:info("indoors; flight over")
+        end
+      end
+    end
   end)
 
   -- a blackout wakes you at the heal point on solid ground, not mid-air;
@@ -404,10 +421,21 @@ return function(mod)
       if not p then return end
       if not flying() then
         if p.freeFlyAlt then p.freeFlyAlt, p.freeFlying = nil, nil end
+        if p.freeFlyWalkSprite then
+          p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
+        end
         dropRider(ow)
         return
       end
       p.freeFlying = true
+      -- the mount IS the player's sheet while airborne, so every renderer
+      -- (voxel first/third person frame remaps included) shows it; the
+      -- walking sheet is stashed for the rider overlay and the landing
+      local mount = Player.__freeFlyMount or Player.__freeFlyBird
+      if mount and p.sprite ~= mount then
+        p.freeFlyWalkSprite = p.freeFlyWalkSprite or p.sprite
+        p.sprite = mount
+      end
       syncRider(ow, p)
       dt = dt or 1 / 60
       local groundOk = ow.map:isWalkableCell(p.cellX, p.cellY)
@@ -435,6 +463,9 @@ return function(mod)
             mod.log:info("landed")
           end
           p.freeFlying, p.freeFlyAlt, p.freeFlyCanLand = nil, nil, nil
+          if p.freeFlyWalkSprite then
+            p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
+          end
           return
         end
       elseif state.phase == "flying" then
@@ -669,9 +700,11 @@ return function(mod)
       end
       bird:draw(self.px, ry, camX, camY, self.facing, flap, false)
       if s ~= 1 then love.graphics.pop() end
-      -- the rider sits higher on a taller mount
-      self.sprite:draw(self.px, ry - math.floor(3 + 3 * s + 0.5),
-                       camX, camY, self.facing, 0, false, true)
+      -- the rider sits higher on a taller mount; always the walking sheet
+      -- (p.sprite is the mount while airborne)
+      local walk = self.freeFlyWalkSprite or self.sprite
+      walk:draw(self.px, ry - math.floor(3 + 3 * s + 0.5),
+                camX, camY, self.facing, 0, false, true)
     end
 
     local SpriteRenderer = require("src.render.SpriteRenderer")
@@ -706,6 +739,44 @@ return function(mod)
       end
     end
     MapMod.__freeFlyActive = function() return flying() end
+
+    -- DRAMATIC_SHAPE's first/third-person FreeMove does its own collision
+    -- (Map:isWalkableCell + Collision.occupied directly, never
+    -- Collision.canMove), so the airborne pass-through above never
+    -- reaches it.  Wrapping its tick opens a permissive window scoped to
+    -- exactly that call while the player flies.
+    do
+      local exports = Game.mods and Game.mods.exports
+      local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
+      local okFM, FreeMove = pcall(function() return V and V.require("FreeMove") end)
+      if okFM and FreeMove and FreeMove.tick then
+        if not MapMod.__freeFlyWalkWrapped then
+          MapMod.__freeFlyWalkWrapped = true
+          local origWalkable = MapMod.isWalkableCell
+          MapMod.isWalkableCell = function(self, cx, cy)
+            if MapMod.__freeFlyPermissive then return self:inBounds(cx, cy) end
+            return origWalkable(self, cx, cy)
+          end
+          local origOccupied = Collision.occupied
+          Collision.occupied = function(...)
+            if MapMod.__freeFlyPermissive then return false end
+            return origOccupied(...)
+          end
+        end
+        if not FreeMove.__freeFlyWrapped then
+          FreeMove.__freeFlyWrapped = true
+          local origTick = FreeMove.tick
+          FreeMove.tick = function(fmState, ...)
+            local p = fmState and fmState.player
+            if not (p and p.freeFlying) then return origTick(fmState, ...) end
+            MapMod.__freeFlyPermissive = true
+            local ok, err = pcall(origTick, fmState, ...)
+            MapMod.__freeFlyPermissive = false
+            if not ok then error(err, 0) end
+          end
+        end
+      end
+    end
 
     -- saves from before 0.9.0 have a taken gift but no marker on the mon;
     -- re-mark the first FLY-knowing PIDGEY so BADGE CHECKS keeps exempting
