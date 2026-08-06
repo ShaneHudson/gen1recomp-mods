@@ -21,13 +21,113 @@ Sky.MOUNT_SPRITES = {
   WATER = "SPRITE_SEEL", FAIRY = "SPRITE_FAIRY", PIKACHU = "SPRITE_FAIRY",
 }
 
+-- ------- borrowed art from other sprite mods
+-- Ordered adapters over other mods' exports (game.mods.exports only lists
+-- mods that are enabled and loaded clean), so our creatures wear that
+-- mod's per-species art.  Everything here flies, so adapters resolve
+-- in-air sheets only: a ground walk cycle toggled in the sky reads as
+-- walking on air, worse than the generic mount sheets, which are at
+-- least drawn mid-flight.  Species without in-air art keep those.
+
+-- the levitates sheets pose their subject over a waterline, splash
+-- included; the splash is this one flat color on every gen 1 sheet
+-- (verified across the full set), keyed to alpha so the sky stays dry
+local WATER_SPLASH = { 232 / 255, 232 / 255, 248 / 255 }
+
+local function splashFreeImage(path)
+  if not (love and love.image and love.image.newImageData
+          and love.graphics) then
+    return nil
+  end
+  -- a fresh decode, never the engine's cached ImageData: the source mod
+  -- still draws these sheets on real water, splash and all
+  local ok, id = pcall(love.image.newImageData, path)
+  if not ok or not id then return nil end
+  local w = WATER_SPLASH
+  id:mapPixel(function(_, _, r, g, b, a)
+    if math.abs(r - w[1]) < 0.004 and math.abs(g - w[2]) < 0.004
+       and math.abs(b - w[3]) < 0.004 then
+      return r, g, b, 0
+    end
+    return r, g, b, a
+  end)
+  local okI, img = pcall(love.graphics.newImage, id)
+  return okI and img or nil
+end
+
+Sky.SPRITE_SOURCES = {
+  { -- Wilds of Kanto's "levitates" water sheets: hovering poses in the
+    -- engine's own 6-frame walker format, style-independent.  The
+    -- registry falls through to swimming art, hence the kind check.
+    mod = "overworld_wild_spawns",
+    stripWater = true,
+    resolve = function(exports, game, species, dex)
+      if not dex then return nil end
+      local reg = exports.render and exports.render.waterSpriteRegistry
+      if not (reg and reg.isReady and reg:isReady()) then return nil end
+      local waterDef = reg:resolve(dex, "normal", "levitates")
+      if type(waterDef) ~= "table" or waterDef.kind ~= "levitates"
+         or type(waterDef.image) ~= "string" then
+        return nil
+      end
+      return { image = waterDef.image, frames = waterDef.frames or 6,
+               walker = true, trueColor = true, id = waterDef.id }
+    end,
+  },
+}
+
+local function animated(def) return def and (def.frames or 1) > 1 end
+
+local sourceCache = {}
+
+local function borrowedSprite(species, dex, seedPrefix)
+  local okG, Game = pcall(require, "src.core.Game")
+  local exportsById = okG and Game and Game.mods and Game.mods.exports
+  if not exportsById then return nil end
+  for _, source in ipairs(Sky.SPRITE_SOURCES) do
+    local exports = exportsById[source.mod]
+    if exports then
+      local ok, def = pcall(source.resolve, exports, Game, species, dex)
+      if ok and animated(def) then
+        local key = (seedPrefix or "shared") .. "#" .. def.image
+        if sourceCache[key] == nil then
+          local SpriteRenderer = require("src.render.SpriteRenderer")
+          local okR, renderer = pcall(SpriteRenderer.new, def,
+            (seedPrefix or "shared") .. "_borrowed")
+          if okR and renderer and source.stripWater then
+            local dry = splashFreeImage(def.image)
+            if dry then renderer.image = dry end
+          end
+          sourceCache[key] = okR and renderer or false
+        end
+        if sourceCache[key] then return sourceCache[key] end
+      end
+    end
+  end
+end
+
+-- true when a mod.options_changed payload belongs to a sprite source;
+-- callers re-resolve their live sprites so a style change shows at once
+function Sky.spriteSourceChanged(payload)
+  local id = payload and payload.mod
+  for _, source in ipairs(Sky.SPRITE_SOURCES) do
+    if source.mod == id then return true end
+  end
+  return false
+end
+
 local mountCache = {}
 
--- a cached walker SpriteRenderer for the species' icon class, falling
--- back to the bird.  Returns renderer, class; renderer is nil only when
--- even the bird sheet is missing (e.g. the ROM-free fixture base).
+-- a cached walker SpriteRenderer for the species, preferring per-species
+-- art borrowed from an enabled sprite mod, then the species' icon class,
+-- falling back to the bird.  Returns renderer, class; renderer is nil
+-- only when even the bird sheet is missing (e.g. the ROM-free fixture
+-- base).
 function Sky.mountSprite(data, species, seedPrefix)
   local class = species and Sky.iconClass(data, species) or nil
+  local mon = species and data.pokemon and data.pokemon[species]
+  local borrowed = mon and borrowedSprite(species, mon.dex, seedPrefix)
+  if borrowed then return borrowed, class end
   local spriteId = (class and Sky.MOUNT_SPRITES[class]) or "SPRITE_BIRD"
   local def = data.sprites and data.sprites[spriteId]
   if not def then return nil, class end

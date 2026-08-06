@@ -2,7 +2,24 @@
 
 ## 1.3.0
 
-- Lockstep release with free_fly 1.3.0; no functional changes.
+- Wilds of Kanto integration: with that mod enabled, flyers wear its
+  per-species "levitates" art, so a crossing Fearow looks like a Fearow
+  instead of the generic bird sheet. Only its in-air sheets are
+  borrowed, never its Sprite Style selection: all three of its styles
+  (HGSS/PokeMMO, Poke Followers, Pokedex) are ground walk cycles, and a
+  walk cycle toggled in the sky reads as walking on air. The levitates
+  sheets are that mod's only flying poses and are style-independent by
+  its own design (its water Pokemon ignore Sprite Style the same way),
+  so the chosen style shows on the ground and the flying pose rules the
+  sky. Species without a levitates sheet (Pidgey, Spearow) keep the
+  generic sheets, which are at least drawn mid-flight.
+- Those levitates sheets are drawn hovering over water, splash included;
+  the splash (one flat color across the whole set) is keyed out at load,
+  so borrowed art carries no water into the sky.
+- Big wings beat slower: the flap rate eases with dex size, so a Fearow
+  flaps calmer than a Spearow.
+- Sprite-source option changes re-dress live flyers immediately instead
+  of waiting for the next spawn.
 
 ## 1.2.0
 

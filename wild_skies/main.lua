@@ -174,9 +174,10 @@ return function(mod)
     self.species = pick.species
     self.level = pick.level or love.math.random(3, 10)
     self.passable = true
-    self.flap = profile.flap
     self.bobAmp = profile.bob
     self.scale = Sky.dexScale(game.data, pick.species)
+    -- big wings beat slower: the class rate eased by dex size
+    self.flap = profile.flap / math.max(1, self.scale)
 
     local map, cam, p = ow.map, ow.camera, ow.player
     local vw, vh = game.renderer:worldViewSize()
@@ -336,6 +337,17 @@ return function(mod)
     return self.sprite, self.px, self.py - visualLift(self),
            (self.vx < 0 and "left" or "right"), flapPhase(self), false, false
   end
+
+  -- a sprite-source mod changed its settings (e.g. Wilds of Kanto's
+  -- Sprite Style): live flyers re-dress in the new art immediately
+  mod.events:on("mod.options_changed", function(payload)
+    if not Sky.spriteSourceChanged(payload) then return end
+    local Game = require("src.core.Game")
+    for _, f in ipairs(flyers) do
+      local sprite = mountFor(Game, f.species)
+      if sprite then f.sprite = sprite end
+    end
+  end)
 
   local keepThroughSeam = false
 
