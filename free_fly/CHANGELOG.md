@@ -5,6 +5,8 @@
 - Voxel: the rooftop compensation is applied instantly instead of eased,
   which removes the hop the rider did over every fence and small object
   (the scene snaps its ground height per cell; the ease lagged it).
+- Ledges no longer hijack an airborne step into the vanilla hop (the
+  arc used to stack on the flight lift); a flyer just crosses them.
 - Voxel: visual flight height raised to 75% (was 60%), balanced by one
   survey-zoom rung out while airborne, restored on landing.
 

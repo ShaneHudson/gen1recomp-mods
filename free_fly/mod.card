@@ -16,7 +16,6 @@ return {
     },
     known = {
       "voxel mode: the rider draws as the full standing figure above the bird, not a seated crop",
-      "ledge hop animation can double with the flight lift",
       "link play untested while airborne",
     },
   },

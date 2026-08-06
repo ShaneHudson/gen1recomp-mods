@@ -912,6 +912,17 @@ return function(mod)
       state.expectBattle = nil
     end)
 
+    -- a flyer crossing a ledge just crosses it: the vanilla hop would
+    -- hijack the step and stack its arc on top of the flight lift
+    if not OC.__freeFlyLedgeWrapped then
+      OC.__freeFlyLedgeWrapped = true
+      local origLedge = OC.checkLedgeHop
+      OC.checkLedgeHop = function(self, ...)
+        if self.player and self.player.freeFlying then return false end
+        return origLedge(self, ...)
+      end
+    end
+
     -- completed-step reactions (locked-door step scripts, gate guards,
     -- spinner tiles, poison ticks) belong to walkers; an airborne step
     -- touches nothing, and landing brings them all straight back
