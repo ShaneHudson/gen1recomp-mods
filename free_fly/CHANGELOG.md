@@ -2,13 +2,8 @@
 
 ## unreleased
 
-- Voxel: adaptive cruise. Flight rides low (36px) over open ground and
-  eases up to clearance height only when solids sit within two cells of
-  the heading, descending again after. Keeps the camera near the terrain
-  so towns stop putting their whole skyline on screen at once, which was
-  the fillrate cost behind the building lag; fence-hop immunity is
-  unchanged (the per-cell adjustment stays instant, only the cruise
-  target eases).
+- Voxel: constant cruise kept, a touch lower (62px total, was 66),
+  still clearing every small building; fence-hop immunity unchanged.
 
 ## 1.2.0
 
