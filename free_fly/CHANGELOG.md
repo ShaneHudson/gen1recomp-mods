@@ -21,7 +21,14 @@
   stay fly-over. Basements don't count as floors, cave interiors never
   qualify (Seafoam, Mt Moon, Victory Road stay flyable), and the bar is
   four floors above ground, so Cinnabar's mansion with its small drawn
-  exterior stays fly-over while the true towers block.
+  exterior stays fly-over while the true towers block. The footprint
+  floods upward from the tower's door through building cells only
+  (fences and shrubs are 6px in the shape profile and no longer chain
+  the wall into neighbouring small buildings).
+- Voxel ride height is a constant total above the ground plane (>= 66px,
+  measured against the profile's flat 16px solids and the scene's 48px
+  volume cap), so every small building clears at default altitude
+  without raising the option, and the ride stays level.
 - Fix: tapping SELECT with no bicycle no longer also shows Quick
   Select's "You don't have a BICYCLE" (its raw press-queue branch saw
   the tap before we consumed it).

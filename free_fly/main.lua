@@ -441,13 +441,9 @@ return function(mod)
     local hasVoxel = Pipelines.get and Pipelines.get("voxel") ~= nil
     local tileShape        -- nil = not tried, false = unavailable
     local ghCache = {}
-    -- returns gh, voxelActive
-    local function voxelGroundHeight(ow, p)
-      if not hasVoxel or Pipelines.level("voxel") <= 0 then return 0, false end
-      if ghCache.map == ow.map and ghCache.x == p.cellX
-         and ghCache.y == p.cellY then
-        return ghCache.h, true
-      end
+    -- the shape profile's height for one cell, or nil when the voxel
+    -- lib is unreachable
+    local function tileHeightAt(map, cx, cy)
       if tileShape == nil then
         tileShape = false
         local exports = Game.mods and Game.mods.exports
@@ -457,16 +453,24 @@ return function(mod)
           if ok and ts and ts.forMap then tileShape = ts end
         end
       end
-      local h = 0
-      if tileShape then
-        local ok, got = pcall(function()
-          if not ow.map:inBounds(p.cellX, p.cellY) then return 0 end
-          local s = tileShape.forMap(ow.map)[ow.map:cellTile(p.cellX, p.cellY)]
-          if not s or s.art == "stair" then return 0 end
-          return s.h > 0 and s.h or 0
-        end)
-        h = (ok and got) or 0
+      if not tileShape then return nil end
+      local ok, got = pcall(function()
+        if not map:inBounds(cx, cy) then return 0 end
+        local s = tileShape.forMap(map)[map:cellTile(cx, cy)]
+        if not s or s.art == "stair" then return 0 end
+        return s.h > 0 and s.h or 0
+      end)
+      return ok and got or 0
+    end
+
+    -- returns gh, voxelActive
+    local function voxelGroundHeight(ow, p)
+      if not hasVoxel or Pipelines.level("voxel") <= 0 then return 0, false end
+      if ghCache.map == ow.map and ghCache.x == p.cellX
+         and ghCache.y == p.cellY then
+        return ghCache.h, true
       end
+      local h = tileHeightAt(ow.map, p.cellX, p.cellY) or 0
       ghCache.map, ghCache.x, ghCache.y, ghCache.h = ow.map, p.cellX, p.cellY, h
       return h, true
     end
@@ -773,16 +777,26 @@ return function(mod)
         if floorFamilySize(warp.destMap) >= 4 then
           -- flood the solid footprint starting above the door, bounded
           -- so it can never wander off into the border-tree ring
+          -- the footprint floods upward from the door through building
+          -- cells only: fences and shrubs are 6px in the shape profile
+          -- and must not chain the flood into a NEIGHBOURING building
+          local function buildingCell(cx, cy)
+            if not map:inBounds(cx, cy) or map:isWalkableCell(cx, cy) then
+              return false
+            end
+            local h = tileHeightAt(map, cx, cy)
+            return h == nil or h >= 16
+          end
           local queue = { { warp.x, warp.y - 1 } }
           local seen, budget = {}, 400
           while #queue > 0 and budget > 0 do
             local cell = table.remove(queue)
             local cx, cy = cell[1], cell[2]
             local key = cy * w + cx
+            local dx, dy = cx - warp.x, cy - warp.y
             if not seen[key]
-               and math.abs(cx - warp.x) <= 8 and math.abs(cy - warp.y) <= 8
-               and map:inBounds(cx, cy)
-               and not map:isWalkableCell(cx, cy) then
+               and math.abs(dx) <= 6 and dy >= -7 and dy <= 0
+               and buildingCell(cx, cy) then
               seen[key] = true
               cells[key] = true
               budget = budget - 1
@@ -914,13 +928,19 @@ return function(mod)
       -- instead of stacking on top of it (min 10 keeps clearance)
       local lift = state.alt + hover
       local gh, voxelOn = voxelGroundHeight(ow, p)
-      -- the pitched voxel camera makes a high card loom at the lens, so
-      -- the visual lift shrinks there; 2D keeps the full height
-      if voxelOn then lift = lift * 0.75 end
-      -- the compensation must be INSTANT: the scene snaps its ground
-      -- height at each cell boundary, and easing toward the new target
-      -- read as the rider hopping over every fence
-      p.freeFlyAlt = gh > 0 and math.max(10, lift - gh) or lift
+      if voxelOn then
+        -- ride at a constant TOTAL height above the ground plane.  Tile
+        -- heights are a flat 16px on every solid (measured; the tall
+        -- look of buildings comes from the scene's own volume pass,
+        -- capped at 48px), so holding total >= 66 clears every small
+        -- building outright and the per-cell subtraction stays INSTANT,
+        -- which is what keeps fences from reading as hops.  True towers
+        -- are facade-blocked before underflight could matter.
+        local total = math.max(lift * 0.75, 66)
+        p.freeFlyAlt = total - gh
+      else
+        p.freeFlyAlt = lift
+      end
       -- the camera tracks PART of the lift in voxel: the card rides a
       -- little above centre and reads smaller/further away, which is the
       -- zoom-out look without enlarging the rendered view (a real zoom
