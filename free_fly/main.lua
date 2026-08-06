@@ -1033,7 +1033,10 @@ return function(mod)
         -- scales with the voxel rung: steeper pitches project vertical
         -- offsets taller on screen, so the camera keeps the rider near
         -- centre at 75 instead of leaving it distant at the frame top.
-        local FOLLOW = { 0.65, 0.65, 0.78, 0.95 }
+        -- At 75 the camera deliberately OVERSHOOTS the rider's height
+        -- (factor > 1): aiming past the card drops the rider to centre
+        -- frame and pushes the foreground buildings down and away.
+        local FOLLOW = { 0.65, 0.65, 0.78, 2.0 }
         local rung = Pipelines.level("voxel") or 0
         camLift = total * (FOLLOW[rung] or 0.65)
       else
