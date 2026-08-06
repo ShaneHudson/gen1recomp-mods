@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.5
+
+- An aerial interception plays the caught species' cry, so a battle
+  never starts without an audible cause.
+
 ## 0.9.4
 
 - Shared helpers (icon-class mounts, dex scale, type/move checks) moved

@@ -80,10 +80,13 @@ return function(mod)
   -- free_fly (or any mod) can read and consume flyers; this is the
   -- supported seam, so nothing reaches into this mod's internals
 
+  -- newborns are excluded: a flyer must have existed long enough to be
+  -- seen before anything may collide with it
   local function flyerNear(cellX, cellY, radius)
     radius = radius or 1
     for _, f in ipairs(flyers) do
-      if math.abs(f.cellX - cellX) + math.abs(f.cellY - cellY) <= radius then
+      if not f.dead and f.t >= 0.75
+         and math.abs(f.cellX - cellX) + math.abs(f.cellY - cellY) <= radius then
         return f
       end
     end
@@ -205,6 +208,12 @@ return function(mod)
       self.px = math.max(0, math.min(self.mapW - 16, startX))
       self.py = math.max(0, math.min(self.mapH - 16,
                   cam.y + love.math.random(8, math.max(9, vh - 24))))
+      -- a small map can clamp the "off-screen" entry right next to the
+      -- player; refuse to materialize a bird on top of them
+      if math.abs(math.floor((self.px + 8) / 16) - p.cellX)
+         + math.abs(math.floor((self.py + 8) / 16) - p.cellY) < 5 then
+        return nil
+      end
       self.vx = dir * speed
       self.vy = love.math.random(-8, 8)
       self.alt = self.cruise
@@ -357,7 +366,11 @@ return function(mod)
         picksCache.key = key
         picksCache.ambient = false
         picksCache.picks = flyingSlots(Game, ow.map.id, tod)
+        -- ambient skies only where the game itself hosts wildlife: the
+        -- map must carry SOME encounter table (sea routes do; towns like
+        -- Cinnabar and Pallet don't, and their skies stay quiet)
         if #picksCache.picks == 0 and ow.map.def
+           and Game.data.encounters and Game.data.encounters[ow.map.id]
            and MapDef.isOutside(ow.map.def,
                  FieldDefaults.field(Game.data, "outsideTilesets")) then
           local pool = tod == "NITE" and AMBIENT_NITE or AMBIENT_DAY

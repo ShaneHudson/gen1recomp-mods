@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1
+
+- Fix phantom encounters: ambient skies require the map to carry an
+  encounter table (towns like Cinnabar stay quiet), airborne spawns
+  refuse to materialize within 5 cells of the player, and newborn or
+  dead flyers are invisible to the inter-mod collision API for 0.75s.
+
 ## 0.4.0
 
 - Sea skies: outdoor maps with no flying grass slots (Routes 19-21) get a

@@ -467,6 +467,9 @@ return function(mod)
             local ok, hit = pcall(take, p.cellX, p.cellY, 1)
             if ok and hit and hit.species then
               state.interceptCooldown = 2
+              pcall(function()
+                require("src.core.Sound").playCry(Game.data, hit.species)
+              end)
               mod.log:info("intercepted %s!", tostring(hit.species))
               mod.world:queueScript({
                 { "start_battle", "wild", hit.species, hit.level or 5 },
