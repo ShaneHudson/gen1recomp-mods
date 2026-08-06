@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.1
+
+- Safety: loading a save always grounds the flight state machine, so a
+  stale airborne phase can never follow the player into a fresh save.
+
 ## 0.10.0
 
 - Voxel first/third person: movement works airborne (their FreeMove runs

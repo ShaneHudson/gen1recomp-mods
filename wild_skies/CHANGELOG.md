@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- GROUND BUMPS (option, default on): a bird at or below 12px, perched,
+  landing or freshly flushed, can collide with a WALKING player and
+  start its battle (cry plays, 1-cell reach). High flyers never touch
+  anyone at ground level; airborne players remain free_fly's business.
+
 ## 0.4.1
 
 - Fix phantom encounters: ambient skies require the map to carry an

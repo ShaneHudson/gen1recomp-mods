@@ -303,6 +303,13 @@ return function(mod)
 
   -- a blackout wakes you at the heal point on solid ground, not mid-air;
   -- the next tick sees the idle phase and clears the player's flags/rider
+  -- flight never survives into a loaded save (saving is vetoed mid-air),
+  -- so a save swap always grounds the state machine; a stale "flying"
+  -- phase could otherwise follow the player into a fresh save
+  mod.events:on("save.loaded", function()
+    state.phase, state.alt = "idle", 0
+  end)
+
   mod.events:on("world.blacked_out", function()
     if flying() then
       state.phase, state.alt = "idle", 0

@@ -25,7 +25,12 @@ return function(mod)
   mod.options:define({
     { key = "density", label = "SKY DENSITY", type = "choice", default = "med",
       choices = { { "LOW", "low" }, { "MED", "med" }, { "HIGH", "high" } } },
+    { key = "bumps", label = "GROUND BUMPS", type = "toggle", default = true },
   })
+
+  -- a bird at or below this height can collide with a walking player;
+  -- anything cruising higher is safe scenery from the ground
+  local LOW_ALT = 12
 
   local DENSITY = {
     low  = { cap = 2, cooldown = 14 },
@@ -344,6 +349,8 @@ return function(mod)
     local MapDef = require("src.world.Map")
     local FieldDefaults = require("src.world.FieldDefaults")
 
+    local bumpCooldown = 0
+
     OC.__wildSkiesTick = function(ow, dt)
       if not (ow and ow.map and ow.player) then return end
       dt = dt or 1 / 60
@@ -355,6 +362,34 @@ return function(mod)
           table.remove(flyers, i)
         end
       end
+
+      -- a LOW bird can bump a grounded player into its battle; high
+      -- flyers never touch anyone below them.  Airborne players are
+      -- free_fly's interception's business, not this one's.
+      bumpCooldown = math.max(0, bumpCooldown - dt)
+      local p = ow.player
+      if bumpCooldown <= 0 and p and not p.freeFlying
+         and mod.options:get("bumps") then
+        local f = flyerNear(p.cellX, p.cellY, 1)
+        if f and (f.alt or 0) <= LOW_ALT then
+          local okQ = mod.world:queueScript({
+            { "start_battle", "wild", f.species, f.level or 5 },
+          })
+          if okQ then
+            bumpCooldown = 2
+            pcall(function()
+              require("src.core.Sound").playCry(Game.data, f.species)
+            end)
+            f.dead = true
+            detach(ow, f)
+            for i = #flyers, 1, -1 do
+              if flyers[i] == f then table.remove(flyers, i) end
+            end
+            mod.log:info("bumped into %s!", tostring(f.species))
+          end
+        end
+      end
+
       cooldown = cooldown - dt
       local d = density()
       -- ambient (slot-less) skies stay sparser than encounter-fed ones
