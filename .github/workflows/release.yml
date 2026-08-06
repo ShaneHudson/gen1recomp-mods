@@ -12,12 +12,9 @@ name: Release
 # Adapted from the single-mod workflow gen1recomp's
 # `modkit add-release-workflow` generates.
 
+# Releases are MANUAL ONLY: run this workflow from the Actions tab (or
+# `gh workflow run Release`) after testing. Pushes never publish.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '.github/**'
-      - '**.md'
   workflow_dispatch:
     inputs:
       version:
