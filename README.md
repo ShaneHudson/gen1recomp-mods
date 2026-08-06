@@ -14,7 +14,7 @@ used together.
 **[free_fly](free_fly/)**: a party member that knows FLY carries you
 around the overworld. Take off anywhere outdoors, fly over trees, water
 and rooftops, cross into neighbouring routes and over the sea, then
-press B to land. You ride the Pokémon you picked, sized by its Pokédex
+press the B button (X on keyboard) to land. You ride the Pokémon you picked, sized by its Pokédex
 height. Story gates and badges are respected by default and everything
 is an option: altitude, speed, badge checks, and a quick-start Pidgey in
 Pallet Town that skips the long wait for HM02.

@@ -2,8 +2,8 @@
 
 Lets a party member that knows FLY carry you around the overworld. Take
 off anywhere outdoors, fly over trees, water, fences and rooftops, cross
-into neighbouring routes (the sea included), and press B over open
-ground to land. That's the whole mod: free flight, no dependencies.
+into neighbouring routes (the sea included), and press the B button (X on
+keyboard) over open ground to land. That's the whole mod: free flight, no dependencies.
 
 [![Demo](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/free_fly-demo.gif)](https://www.loom.com/share/5867c264456040c8a37acc7e32f4c827)
 
@@ -24,7 +24,7 @@ in voxel.
    HM02, so a hacked-in FLY on the wrong species doesn't count).
 2. Open its party submenu and pick FREEFLY.
 3. Move as normal. The shadow under you turns green over ground you can
-   land on; press B to set down. Blacking out also grounds you.
+   land on; press the B button (X on keyboard) to set down. Blacking out also grounds you.
 
 ### The quick-start Pidgey
 
