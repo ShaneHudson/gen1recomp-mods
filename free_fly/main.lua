@@ -1018,16 +1018,27 @@ return function(mod)
       local lift = state.alt + hover
       local gh, voxelOn = voxelGroundHeight(ow, p)
       if voxelOn then
-        -- ride at a constant TOTAL height above the ground plane.  Tile
-        -- heights are a flat 16px on every solid (measured; the tall
-        -- look of buildings comes from the scene's own volume pass,
-        -- capped at 48px), so holding total >= 66 clears every small
-        -- building outright and the per-cell subtraction stays INSTANT,
-        -- which is what keeps fences from reading as hops.  True towers
-        -- are facade-blocked before underflight could matter.
-        local total = math.max(lift * 0.75, 66)
-        p.freeFlyAlt = total - gh
+        -- adaptive cruise: LOW over open ground (the camera stays near
+        -- the terrain, so towns don't put their whole skyline on screen
+        -- at once -- that fillrate was the building lag), climbing to
+        -- clearance height only when solids sit within two cells of the
+        -- heading.  The climb EASES (a bird rising over a house); the
+        -- per-cell gh subtraction stays INSTANT, which is what keeps
+        -- fences from reading as hops.  Towers are facade-blocked, so
+        -- clearance never needs to exceed the scene's 48px volume cap.
+        local want = 36
+        local d = require("src.world.Collision").DELTA[p.facing] or { 0, 0 }
+        for step = 0, 2 do
+          local h = tileHeightAt(ow.map, p.cellX + d[1] * step,
+                                 p.cellY + d[2] * step) or 0
+          if h > 0 then want = 66 break end
+        end
+        local cur = state.vTotal or want
+        local rate = (want > cur and 90 or 50) * dt
+        state.vTotal = cur + math.max(-rate, math.min(rate, want - cur))
+        p.freeFlyAlt = math.max(10, state.vTotal - gh + hover * 0.5)
       else
+        state.vTotal = nil
         p.freeFlyAlt = lift
       end
       -- the camera tracks PART of the lift in voxel: the card rides a
