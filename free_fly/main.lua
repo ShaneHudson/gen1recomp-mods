@@ -1017,6 +1017,7 @@ return function(mod)
       -- instead of stacking on top of it (min 10 keeps clearance)
       local lift = state.alt + hover
       local gh, voxelOn = voxelGroundHeight(ow, p)
+      local camLift
       if voxelOn then
         -- constant 52px TOTAL ride: the scene's building volumes cap at
         -- 48px from the ground plane (their mesher's MAX_ROWS), so this
@@ -1025,16 +1026,16 @@ return function(mod)
         -- fences from reading as hops.  Towers are facade-blocked.
         local total = math.max(lift * 0.75, 52)
         p.freeFlyAlt = total - gh
+        -- the camera follows the constant TOTAL, never the varying
+        -- per-cell part: roofs mix zero-height flat-class cells into
+        -- their upper rows, and a camera tracking freeFlyAlt lurched
+        -- there while the card itself stayed level
+        camLift = total * 0.65
       else
         p.freeFlyAlt = lift
+        camLift = lift
       end
-      -- the camera tracks PART of the lift in voxel: the card rides a
-      -- little above centre and reads smaller/further away, which is the
-      -- zoom-out look without enlarging the rendered view (a real zoom
-      -- rung grew the chunk set and stepped up the shadow-map resolution,
-      -- which was the building lag while airborne)
-      local follow = voxelOn and 0.65 or 1
-      ow.camera:follow(p.px, p.py - p.freeFlyAlt * follow,
+      ow.camera:follow(p.px, p.py - camLift,
                        Game.renderer:worldViewSize())
     end
 

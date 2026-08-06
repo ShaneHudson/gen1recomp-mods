@@ -5,7 +5,10 @@
 - Voxel: constant 52px ride. The scene's building volumes cap at 48px,
   so this clears every small building everywhere with no climbs or
   push-ups at all; fence-hop immunity unchanged. Towers stay
-  facade-blocked.
+  facade-blocked. The camera follows the constant total rather than the
+  per-cell part, which removes the upward lurch over the top half of
+  roofs (their upper rows mix in zero-height flat-class cells; the card
+  itself was always level, the camera wasn't).
 
 ## 1.2.0
 
