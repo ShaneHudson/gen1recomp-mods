@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.1
+
+- A classic step encounter that rolls a species with a lookalike within
+  two cells of the player now consumes that bird: it carries its own
+  level into the battle, and a defeat or capture never leaves it
+  perched there or flying off. When a grounded and a flying match are
+  both close, the grounded one is the battle.
+- For mod authors (see INTEGRATION.md in the repository):
+  `exports.spawnFlyer(species, level)` spawns one flyer on demand, the
+  `mod.wild_skies.flyer_bumped` event broadcasts ground-bump battles,
+  and `exports.registerSpriteSource` lets sprite packs offer in-air
+  art. The ground-bump gate now reads free_fly's exported flight state
+  instead of the raw player field.
+
 ## 1.3.0
 
 - Wilds of Kanto integration: with that mod enabled, flyers wear its

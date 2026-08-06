@@ -102,6 +102,12 @@ return function(mod)
     if f then return { species = f.species, level = f.level } end
   end
 
+  -- sprite packs with in-air art can register a source (shared/README
+  -- in the repo documents the shape); this reaches only THIS mod's
+  -- bundled resolver, so packs register with each mod they dress
+  mod.exports.registerSpriteSource = Sky.registerSpriteSource
+  mod.exports.unregisterSpriteSource = Sky.unregisterSpriteSource
+
   -- consume the flyer: despawns it and hands back its identity, or nil
   mod.exports.takeFlyer = function(cellX, cellY, radius)
     local f = flyerNear(cellX, cellY, radius)
@@ -113,6 +119,54 @@ return function(mod)
       if flyers[i] == f then table.remove(flyers, i) end
     end
     return { species = f.species, level = f.level }
+  end
+
+  -- a classic step encounter that rolls a species with a lookalike near
+  -- the player IS that bird as far as anyone can tell, so the roll
+  -- consumes it: the bird carries its own level into the battle, and a
+  -- defeat or capture never leaves it perched there or flying off.  A
+  -- grounded or landing bird outranks a flying one, being the one the
+  -- player is actually stood next to.
+  mod.hooks:wrap("encounter.roll", function(next, encDef, ctx)
+    local enc = next(encDef, ctx)
+    if enc and enc.species then
+      local Game = require("src.core.Game")
+      local ow = Game and Game.overworld
+      local p = ow and ow.player
+      if p then
+        local pick, pickIndex
+        for i, f in ipairs(flyers) do
+          if not f.dead and f.species == enc.species
+             and math.abs(f.cellX - p.cellX)
+               + math.abs(f.cellY - p.cellY) <= 2 then
+            if f.mode == "ground" or f.mode == "toLand" then
+              pick, pickIndex = f, i
+              break
+            end
+            if not pick then pick, pickIndex = f, i end
+          end
+        end
+        if pick then
+          enc.level = pick.level or enc.level
+          pick.dead = true
+          detach(ow, pick)
+          table.remove(flyers, pickIndex)
+        end
+      end
+    end
+    return enc
+  end)
+
+  -- free_fly's exported flight state when it is around, else the raw
+  -- field it stamps on the player
+  local function playerAirborne(p)
+    local ff = mod.find("free_fly")
+    local api = ff and ff.exports and ff.exports.isFlying
+    if api then
+      local ok, v = pcall(api)
+      if ok then return v == true end
+    end
+    return p ~= nil and p.freeFlying == true
   end
 
   -- the map's grass slots filtered to FLYING types and the time of day;
@@ -338,6 +392,22 @@ return function(mod)
            (self.vx < 0 and "left" or "right"), flapPhase(self), false, false
   end
 
+  -- spawn one flyer on demand (scenario mods, tests): entry, height and
+  -- behaviour roll as usual; the ambient caps and cooldowns are not
+  -- consulted.  Returns the flyer id, or nil and a reason.
+  mod.exports.spawnFlyer = function(species, level)
+    local Game = require("src.core.Game")
+    local ow = Game and Game.overworld
+    if not (ow and ow.map and ow.player) then return nil, "no overworld" end
+    local flyer = Flyer.new(Game, ow, { species = species, level = level })
+    if not flyer then
+      return nil, "no sprite or no clear entry for " .. tostring(species)
+    end
+    flyers[#flyers + 1] = flyer
+    table.insert(ow.entities, flyer)
+    return flyer.id
+  end
+
   -- a sprite-source mod changed its settings (e.g. Wilds of Kanto's
   -- Sprite Style): live flyers re-dress in the new art immediately
   mod.events:on("mod.options_changed", function(payload)
@@ -386,7 +456,7 @@ return function(mod)
       -- free_fly's interception's business, not this one's.
       bumpCooldown = math.max(0, bumpCooldown - dt)
       local p = ow.player
-      if bumpCooldown <= 0 and p and not p.freeFlying
+      if bumpCooldown <= 0 and p and not playerAirborne(p)
          and mod.options:get("bumps") then
         local f = flyerNear(p.cellX, p.cellY, 1)
         if f and (f.alt or 0) <= LOW_ALT then
@@ -404,6 +474,12 @@ return function(mod)
               if flyers[i] == f then table.remove(flyers, i) end
             end
             mod.log:info("bumped into %s!", tostring(f.species))
+            pcall(function()
+              mod.events:emit("mod.wild_skies.flyer_bumped", {
+                species = f.species, level = f.level or 5,
+                cellX = f.cellX, cellY = f.cellY,
+              })
+            end)
           end
         end
       end

@@ -7,6 +7,9 @@ local T = require("tests.modkit")
 local Data = require("src.core.Data"); Data:load()
 
 local run = T.sdk.loadMod(os.getenv("MOD_DIR") or "mods/free_fly", { data = Data })
+-- discovery finding nothing also reports zero errors, so a vacuous run
+-- must fail here rather than pass silently (MOD_DIR must be relative)
+T.check(run.mod ~= nil, "mod discovered and loaded")
 T.eq(#run.errors, 0, "loads clean")
 run.release()
 T.finish("free_fly")

@@ -45,10 +45,27 @@ This mod only adds ambient wildlife.
 
 ## For mod authors
 
+The full reference with payloads and examples is
+[INTEGRATION.md](../INTEGRATION.md) in the repository. The short
+version:
+
 `exports.flyerAt(cellX, cellY, radius)` reads the nearest flyer,
 `exports.takeFlyer(...)` consumes it and returns its species and level.
 That is the supported seam free_fly's interception uses; nothing needs
 to reach into this mod's internals.
+
+`exports.spawnFlyer(species, level)` spawns one flyer on demand for
+scenario mods: entry point, height and behaviour roll as usual, ambient
+caps are not consulted. Returns the flyer id, or nil and a reason.
+
+When a ground bump starts a battle, the event
+`mod.wild_skies.flyer_bumped` broadcasts `{ species, level, cellX,
+cellY }`.
+
+Sprite packs with flying or hovering art can register it through
+`exports.registerSpriteSource(source)` (and unregister by id); the
+source shape is documented in INTEGRATION.md. Each of our mods bundles
+its own resolver, so register with every mod you want to dress.
 
 ## Install
 

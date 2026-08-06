@@ -73,6 +73,41 @@ return function(mod)
 
   local function flying() return state.phase ~= "idle" end
 
+  -- ------- public API
+  -- Flight state for other mods; the takeoff/landed events below are
+  -- the push-style counterpart.  Nothing here hands out internals.
+  mod.exports.isFlying = function() return flying() end
+  mod.exports.altitude = function() return flying() and state.alt or 0 end
+  mod.exports.mount = function()
+    local mon = flying() and state.mountMon or nil
+    if not mon then return nil end
+    return { species = mon.species, level = mon.level }
+  end
+  -- sprite packs with in-air art can register a source (shared/README
+  -- in the repo documents the shape); this reaches only THIS mod's
+  -- bundled resolver, so packs register with each mod they dress
+  mod.exports.registerSpriteSource = Sky.registerSpriteSource
+  mod.exports.unregisterSpriteSource = Sky.unregisterSpriteSource
+
+  local function emitTakeoff(mon)
+    pcall(function()
+      mod.events:emit("mod.free_fly.takeoff",
+        { species = mon and mon.species, level = mon and mon.level })
+    end)
+  end
+
+  -- reason: "landed", "indoors", "blackout" or "save_loaded"; water is
+  -- true when the landing handed the player straight into surfing
+  local function emitLanded(reason, p)
+    pcall(function()
+      mod.events:emit("mod.free_fly.landed", {
+        reason = reason,
+        x = p and p.cellX, y = p and p.cellY,
+        water = (p and p.surfing == true) or nil,
+      })
+    end)
+  end
+
   -- render pipelines (voxel, tilt) billboard every entity through pose();
   -- while flying the player's own card becomes the bird, and this ghost
   -- entity carries the player figure seated above it.  Invisible in the
@@ -177,6 +212,7 @@ return function(mod)
       require("src.core.Sound").play(require("src.core.Game").data, "Fly")
     end)
     mod.log:info("took off; press B over walkable ground to land")
+    emitTakeoff(mon)
   end
 
   -- a sprite-source mod changed its settings mid-flight: the mount
@@ -401,6 +437,7 @@ return function(mod)
         if not skyAbove(game, ow.map.def) then
           state.phase, state.alt = "idle", 0
           mod.log:info("indoors; flight over")
+          emitLanded("indoors", ow.player)
         end
       end
     end
@@ -471,13 +508,16 @@ return function(mod)
   -- so a save swap always grounds the state machine; a stale "flying"
   -- phase could otherwise follow the player into a fresh save
   mod.events:on("save.loaded", function()
+    local wasFlying = flying()
     state.phase, state.alt = "idle", 0
+    if wasFlying then emitLanded("save_loaded", nil) end
   end)
 
   mod.events:on("world.blacked_out", function()
     if flying() then
       state.phase, state.alt = "idle", 0
       mod.log:info("blacked out; flight over")
+      emitLanded("blackout", nil)
     end
   end)
 
@@ -1156,6 +1196,7 @@ return function(mod)
             if p.freeFlyWalkSprite then
               p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
             end
+            emitLanded("landed", p)
             return
           end
         end
@@ -1770,6 +1811,14 @@ return function(mod)
       local npc = ow and PF.current(ow)
       if not (ow and flying()) then
         if npc then groundFollower(npc) end
+        return orig(game, ow, ...)
+      end
+      -- a follower mod that declares freeFlyAware handles flight itself
+      -- (it can watch the mod.free_fly.takeoff/landed events and the
+      -- isFlying/altitude exports); we keep our hands off its follower
+      local pokepc = mod.find("PokePCFollowers_VoxelMerge")
+      if pokepc and pokepc.exports
+         and pokepc.exports.freeFlyAware == true then
         return orig(game, ow, ...)
       end
       local mon = followerMon(game)

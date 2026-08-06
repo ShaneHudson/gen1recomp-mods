@@ -10,7 +10,12 @@ TARGET="${GEN1RECOMP_MODS_DIR:-$GEN1/mods}"
 
 "$ROOT/scripts/dev.sh"
 
+# The modkit SDK resolves mod paths relative to the engine checkout, so
+# MOD_DIR must be relative; an absolute path makes discovery silently
+# find nothing (the load tests assert against exactly that).
 cd "$GEN1"
 for mod in free_fly wild_skies; do
-  MOD_DIR="$TARGET/$mod" luajit "$TARGET/$mod/tests/${mod}_load_test.lua"
+  for t in "mods/$mod"/tests/*.lua; do
+    MOD_DIR="mods/$mod" luajit "$t"
+  done
 done

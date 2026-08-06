@@ -119,6 +119,30 @@ overlapping features of their own, so check their changelogs):
   the engine's own field-move eligibility chain instead of keeping rules
   of its own.
 
+## For mod authors
+
+The full reference with payloads and examples is
+[INTEGRATION.md](../INTEGRATION.md) in the repository. The short
+version:
+
+Flight state is exported: `isFlying()`, `altitude()` (pixels, 0 on the
+ground) and `mount()` (the ridden mon's species and level, or nil).
+Lifecycle events broadcast to every mod: `mod.free_fly.takeoff` carries
+`{ species, level }`, `mod.free_fly.landed` carries `{ reason, x, y,
+water }` where reason is `landed`, `indoors`, `blackout` or
+`save_loaded`. Prefer these over reading the player's `freeFlying`
+field.
+
+Follower mods: by default this mod lifts a FLYING-type follower into
+the air and hides any other during flight. Export `freeFlyAware = true`
+and it keeps its hands off your follower entirely; react to the events
+above instead.
+
+Sprite packs with flying or hovering art can register it through
+`exports.registerSpriteSource(source)` (and unregister by id); the
+source shape is documented in INTEGRATION.md. Each of our mods bundles
+its own resolver, so register with every mod you want to dress.
+
 ## Install
 
 1. Download `free_fly-<version>.zip` from the

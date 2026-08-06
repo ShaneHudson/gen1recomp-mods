@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.1
+
+- For mod authors (see INTEGRATION.md in the repository): flight state
+  is exported (`isFlying`, `altitude`, `mount`), the
+  `mod.free_fly.takeoff` and `mod.free_fly.landed` events broadcast
+  the flight lifecycle from every path a flight can end, follower mods
+  can opt out of the built-in handling by exporting `freeFlyAware`,
+  and `registerSpriteSource` lets sprite packs offer in-air art.
+
 ## 1.3.0
 
 - Wilds of Kanto integration: with that mod enabled, the mount wears its

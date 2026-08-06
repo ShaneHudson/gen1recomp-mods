@@ -76,17 +76,46 @@ Sky.SPRITE_SOURCES = {
   },
 }
 
+-- other mods can offer their own in-air art: a source carries a mod id
+-- (its exports are passed to resolve; skipped while that mod is off) or
+-- stands alone (resolve gets nil exports).  Registered sources outrank
+-- the built-ins; re-registering an id replaces it.  Note each of our
+-- mods bundles its own skylib copy, so a pack registers with every mod
+-- it wants to dress.
+function Sky.registerSpriteSource(source)
+  if type(source) ~= "table" or type(source.resolve) ~= "function" then
+    return false, "source table with a resolve function required"
+  end
+  local id = source.id or source.mod
+  if id == nil then return false, "source needs an id or a mod" end
+  Sky.unregisterSpriteSource(id)
+  table.insert(Sky.SPRITE_SOURCES, 1, source)
+  return true
+end
+
+function Sky.unregisterSpriteSource(id)
+  for i = #Sky.SPRITE_SOURCES, 1, -1 do
+    local s = Sky.SPRITE_SOURCES[i]
+    if (s.id or s.mod) == id then
+      table.remove(Sky.SPRITE_SOURCES, i)
+      return true
+    end
+  end
+  return false
+end
+
 local function animated(def) return def and (def.frames or 1) > 1 end
 
 local sourceCache = {}
 
 local function borrowedSprite(species, dex, seedPrefix)
   local okG, Game = pcall(require, "src.core.Game")
-  local exportsById = okG and Game and Game.mods and Game.mods.exports
-  if not exportsById then return nil end
+  Game = okG and Game or nil
+  local exportsById = Game and Game.mods and Game.mods.exports or nil
   for _, source in ipairs(Sky.SPRITE_SOURCES) do
-    local exports = exportsById[source.mod]
-    if exports then
+    local exports = source.mod and exportsById and exportsById[source.mod]
+      or nil
+    if exports ~= nil or source.mod == nil then
       local ok, def = pcall(source.resolve, exports, Game, species, dex)
       if ok and animated(def) then
         local key = (seedPrefix or "shared") .. "#" .. def.image
@@ -110,8 +139,9 @@ end
 -- callers re-resolve their live sprites so a style change shows at once
 function Sky.spriteSourceChanged(payload)
   local id = payload and payload.mod
+  if id == nil then return false end
   for _, source in ipairs(Sky.SPRITE_SOURCES) do
-    if source.mod == id then return true end
+    if source.mod == id or source.id == id then return true end
   end
   return false
 end
