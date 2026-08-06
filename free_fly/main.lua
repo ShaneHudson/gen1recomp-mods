@@ -766,8 +766,11 @@ return function(mod)
       local map = ow.map
       local w = map.widthCells or ((map.def and map.def.width or 0) * 2)
       local cells = {}
+      -- four or more floors above ground is a tower (dept store, Silph,
+      -- Pokemon Tower, Celadon Mansion).  Three is a big house whose
+      -- small drawn exterior stays fly-over: Cinnabar's mansion.
       for _, warp in ipairs((map.def and map.def.warps) or {}) do
-        if floorFamilySize(warp.destMap) >= 3 then
+        if floorFamilySize(warp.destMap) >= 4 then
           -- flood the solid footprint starting above the door, bounded
           -- so it can never wander off into the border-tree ring
           local queue = { { warp.x, warp.y - 1 } }
