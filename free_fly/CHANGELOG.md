@@ -2,6 +2,29 @@
 
 ## 1.3.0
 
+- Wilds of Kanto integration: with that mod enabled, the mount wears its
+  per-species "levitates" art (splash keyed out, sized by dex height)
+  instead of the generic bird/monster sheets. Deliberately not its
+  Sprite Style setting: those styles are ground walk cycles with no
+  flying poses, so the chosen style shows on the ground while the
+  levitates sheets (that mod's only in-air art, style-independent by its
+  own design) rule the sky. Species without one keep the generic sheets.
+- Followers fly or sit out: with PokePC Followers installed (or Yellow's
+  own Pikachu), a FLYING-type follower trails just below you through the
+  air, wearing the same art the mount resolver picks so the pair reads
+  as one style, sized by its own dex height. Any other follower, and the
+  mon currently carrying you, sits the flight out and walks back at your
+  side on landing. Ground follower art stays whatever the follower mod
+  chose.
+- The quick-start gift is now a PIDGEOT (same level, new dialogue).
+  Saves that already took the Pidgey keep working: same taken flag, the
+  badge exemption stays on the mon, and the old-save migration now
+  matches the whole evolution line so an evolved gift stays exempt.
+- Fix: re-entering Pallet Town (teleport, fly, walking back) no longer
+  stacks duplicate gift NPCs; sessions that already collected twins
+  self-heal on the next map entry.
+- Wing flap eases with mount size: an Articuno beats its wings about a
+  third slower than the old fixed rate; Pidgey-sized mounts unchanged.
 - Takeoffs and landings move like the wild flyers'. The mount climbs on
   a diagonal (a short forward drift, dropped the moment you steer), and
   a land press while moving swoops in along your heading, skimming the

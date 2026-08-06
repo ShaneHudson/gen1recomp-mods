@@ -49,15 +49,16 @@ once you get the bicycle, the tap goes back to it and your registered
 direction keeps working for flight. Without Quick Select installed, the
 whistle doesn't exist and nothing changes.
 
-### The quick-start Pidgey
+### The quick-start Pidgeot
 
 In vanilla you can't fly until late in the game: HM02 is in the Safari
 Zone and using FLY needs the THUNDERBADGE. As an optional shortcut, a
-Pidgey stands in the middle of Pallet Town. Talk to it and it joins at
+Pidgeot stands in the middle of Pallet Town. Talk to it and it joins at
 L10 already knowing FLY, and it skips the badge check, so you can fly
 from the start of a new game. One per save. If you'd rather earn flight
-normally, turn QUICK START off in the mod's options and the Pidgey never
-appears.
+normally, turn QUICK START off in the mod's options and the Pidgeot
+never appears. Saves that already took the gift when it was a Pidgey
+keep it, badge exemption included, even after it evolves.
 
 ## Options
 
@@ -68,8 +69,8 @@ appears.
 | AIR ENCOUNTERS | ON | brushing a wild_skies flyer starts its battle |
 | TRAINERS SPOT YOU | OFF | hardcore: trainer sight works on flyers |
 | STORY GATES | ON | badge-gated areas (Route 23) refuse airborne entry |
-| BADGE CHECKS | ON | vanilla badges: THUNDERBADGE to fly, SOULBADGE to land on water (the gift Pidgey is exempt from the fly check) |
-| QUICK START | ON | the Pallet Town Pidgey |
+| BADGE CHECKS | ON | vanilla badges: THUNDERBADGE to fly, SOULBADGE to land on water (the gift bird is exempt from the fly check) |
+| QUICK START | ON | the Pallet Town Pidgeot |
 
 ## What flying changes, and what it doesn't
 
@@ -107,6 +108,11 @@ overlapping features of their own, so check their changelogs):
 - [Quick Select](https://github.com/Roxas2712/pokemon-quick-select)
   (tested with 1.0.1): adds the FLY WHISTLE shortcut flow described
   above.
+- [PokePC Followers](https://github.com/gamecorner-033/PokePCFollowers)
+  (tested with 0.5.1): a FLYING-type follower takes to the air and trails
+  just below you while you fly; any other follower waits out the flight
+  and walks back to your side when you land. The same applies to Yellow's
+  own Pikachu without the mod.
 - [QoL Toggles](https://github.com/ShaneMcGovernIE/qol_toggles): its
   FIELD MOVES ALL setting unlocks FREEFLY (and water landings) on any
   HM-compatible partner without teaching the move, because this mod asks

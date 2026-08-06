@@ -33,10 +33,10 @@ return function(mod)
     { key = "spotted", label = "TRAINERS SPOT YOU", type = "toggle", default = false },
     { key = "gates", label = "STORY GATES", type = "toggle", default = true },
     -- vanilla badge requirements: THUNDERBADGE to fly, SOULBADGE to set
-    -- down on water.  The Pallet gift Pidgey is exempt from the fly check
+    -- down on water.  The Pallet gift bird is exempt from the fly check
     -- (never the surf one), so the quick start survives the option.
     { key = "badges", label = "BADGE CHECKS", type = "toggle", default = true },
-    -- the Pallet Town gift Pidgey; off leaves a fully vanilla start
+    -- the Pallet Town gift Pidgeot; off leaves a fully vanilla start
     { key = "quickstart", label = "QUICK START", type = "toggle", default = true },
   })
 
@@ -61,11 +61,14 @@ return function(mod)
   local function cruiseAlt() return ALTS[mod.options:get("altitude")] or 56 end
   local function flyFrames() return SPEEDS[mod.options:get("speed")] or 8 end
 
-  local PIDGEY_LEVEL = 10
-  local PIDGEY_TAKEN = "MOD_FREE_FLY_PIDGEY_TAKEN"
-  local PIDGEY_TEXT = "TEXT_FREE_FLY_PIDGEY"
+  local GIFT_SPECIES = "PIDGEOT"
+  local GIFT_LEVEL = 10
+  -- legacy PIDGEY strings: the flag is in existing saves that already
+  -- took the old Pidgey gift, so it must never change
+  local GIFT_TAKEN = "MOD_FREE_FLY_PIDGEY_TAKEN"
+  local GIFT_TEXT = "TEXT_FREE_FLY_PIDGEY"
 
-  local state = { phase = "idle", alt = 0, bob = 0, pidgeyNpcId = nil,
+  local state = { phase = "idle", alt = 0, bob = 0, giftNpcId = nil,
                   rider = nil }
 
   local function flying() return state.phase ~= "idle" end
@@ -176,6 +179,15 @@ return function(mod)
     mod.log:info("took off; press B over walkable ground to land")
   end
 
+  -- a sprite-source mod changed its settings mid-flight: the mount
+  -- re-dresses in the new art without landing
+  mod.events:on("mod.options_changed", function(payload)
+    if not Sky.spriteSourceChanged(payload) then return end
+    if flying() and state.resolveMount then
+      state.resolveMount(state.mountMon)
+    end
+  end)
+
   -- ------- public hooks, all pass-through unless airborne
 
   mod.hooks:wrap("movement.collision", function(next, allowed, ctx)
@@ -237,14 +249,18 @@ return function(mod)
     return out
   end)
 
-  -- ------- the Pallet Town Pidgey: a quick way to get a FLY user
+  -- ------- the Pallet Town Pidgeot: a quick way to get a FLY user
 
-  -- after give_pokemon lands the gift, put FLY in its move list
+  -- after give_pokemon lands the gift, put FLY in its move list; PIDGEY
+  -- stays accepted for anything replaying against an older save
   mod.content.commands:register("free_fly:teach_fly", {
     foreground = true,
     fn = function(ctx)
       local function teach(mon)
-        if not mon or mon.species ~= "PIDGEY" then return false end
+        if not mon then return false end
+        if mon.species ~= GIFT_SPECIES and mon.species ~= "PIDGEY" then
+          return false
+        end
         -- marks the gift so the BADGE CHECKS option exempts its flights;
         -- rides the mon table, so it survives in the save
         mon.freeFlyGift = true
@@ -269,16 +285,16 @@ return function(mod)
           if teach(mon) then return end
         end
       end
-      mod.log:warn("gift PIDGEY not found; FLY not taught")
+      mod.log:warn("gift %s not found; FLY not taught", GIFT_SPECIES)
     end,
   })
 
   mod.content.commands:register("free_fly:pidgey_taken", {
     foreground = true,
     fn = function()
-      if state.pidgeyNpcId then
-        mod.world:removeNpc(state.pidgeyNpcId)
-        state.pidgeyNpcId = nil
+      if state.giftNpcId then
+        mod.world:removeNpc(state.giftNpcId)
+        state.giftNpcId = nil
       end
     end,
   })
@@ -297,32 +313,60 @@ return function(mod)
 
   mod.content.map_scripts:register("PALLET_TOWN", {
     talk = {
-      [PIDGEY_TEXT] = {
-        { "check_flag", PIDGEY_TAKEN },
+      [GIFT_TEXT] = {
+        { "check_flag", GIFT_TAKEN },
         { "jump_if_true", "end" },
-        { "show_text", "PIDGEY! It knows\nFLY, and it wants\nto travel!" },
+        { "show_text", "The tag on this\nPIDGEOT's neck\nsays it can fly\nanywhere without\na badge!\fUse only if\nyou dare" },
         { "choice", { "TAKE IT", "LEAVE IT" } },
         { "jump_if_false", "refused" },
-        { "set_flag", PIDGEY_TAKEN },
-        { "give_pokemon", "PIDGEY", PIDGEY_LEVEL },
+        { "set_flag", GIFT_TAKEN },
+        { "give_pokemon", GIFT_SPECIES, GIFT_LEVEL },
         { "free_fly:teach_fly" },
         { "free_fly:pidgey_taken" },
-        { "show_text", "PIDGEY is happy to\ncarry you!\fPick FREEFLY in\nits party menu." },
+        { "show_text", "PIDGEOT is glad to\ncarry you!\fPick FREEFLY in\nits party menu." },
         { "jump", "end" },
 
         { "label", "refused" },
-        { "show_text", "PIDGEY tilts its\nhead." },
+        { "show_text", "PIDGEOT tilts its\nhead." },
       },
     },
   })
 
-  local function spawnPidgey()
-    if not mod.options:get("quickstart") then return end
+  -- ids of our runtime gift NPCs already living in the map def (the
+  -- legacy FREE_FLY_PIDGEY name spans both species):
+  -- spawnNpc persists into def.objects, so they outlive the visit that
+  -- spawned them and come back on every later map load
+  local function giftObjectIds(game)
+    local ids = {}
+    local def = game.data.maps and game.data.maps.PALLET_TOWN
+    for _, obj in ipairs(def and def.objects or {}) do
+      if obj.runtime and obj.name == "FREE_FLY_PIDGEY" then
+        ids[#ids + 1] = "PALLET_TOWN_obj_" .. obj.index
+      end
+    end
+    return ids
+  end
+
+  local function spawnGift()
     local ow = mod.world and mod.world:overworld()
     if not (ow and ow.map and ow.map.id == "PALLET_TOWN") then return end
-    if state.pidgeyNpcId then return end
     local game = require("src.core.Game")
-    if game.save and game.save.flags and game.save.flags[PIDGEY_TAKEN] then return end
+    local taken = game.save and game.save.flags and game.save.flags[GIFT_TAKEN]
+    local wanted = mod.options:get("quickstart") and not taken
+
+    -- adopt the survivor from an earlier visit instead of spawning a
+    -- twin; retire it (and any twins already accumulated) when the gift
+    -- is taken or the option is off
+    local existing = giftObjectIds(game)
+    for i = #existing, wanted and 2 or 1, -1 do
+      mod.world:removeNpc(existing[i])
+      table.remove(existing, i)
+    end
+    if existing[1] then
+      state.giftNpcId = existing[1]
+      return
+    end
+    if not wanted then return end
     -- first free walkable cell near the town center
     local Collision = require("src.world.Collision")
     local spots = { { 10, 10 }, { 9, 10 }, { 11, 10 }, { 10, 11 },
@@ -331,23 +375,23 @@ return function(mod)
       local x, y = s[1], s[2]
       if ow.map:isWalkableCell(x, y)
          and not Collision.occupied(ow.entities, x, y, nil) then
-        state.pidgeyNpcId = mod.world:spawnNpc("PALLET_TOWN", {
+        state.giftNpcId = mod.world:spawnNpc("PALLET_TOWN", {
           name = "FREE_FLY_PIDGEY",
           sprite = "SPRITE_BIRD",
           movement = "STAY",
           range = "DOWN",
-          text = PIDGEY_TEXT,
+          text = GIFT_TEXT,
           x = x, y = y,
         })
         return
       end
     end
-    mod.log:warn("no free cell for the PALLET_TOWN PIDGEY this visit")
+    mod.log:warn("no free cell for the PALLET_TOWN gift this visit")
   end
 
   mod.events:on("map.entered", function(ev)
-    state.pidgeyNpcId = nil
-    if ev and ev.mapId == "PALLET_TOWN" then spawnPidgey() end
+    state.giftNpcId = nil
+    if ev and ev.mapId == "PALLET_TOWN" then spawnGift() end
     -- hard guarantee: there is no indoor flight.  Whatever path leads
     -- into a cave or building while airborne, the flight ends on arrival.
     if flying() then
@@ -1034,8 +1078,9 @@ return function(mod)
       end
       syncRider(ow, p)
       -- wings work harder in transitions than on the cruise, same as
-      -- the wild flyers' flap profiles
-      p.freeFlyFlapRate = state.phase == "flying" and 8 or 12
+      -- the wild flyers' flap profiles; big mounts beat slower
+      p.freeFlyFlapRate = (state.phase == "flying" and 8 or 12)
+        / math.max(1, Player.__freeFlyMountScale or 1)
       dt = dt or 1 / 60
       local groundOk = ow.map:isWalkableCell(p.cellX, p.cellY)
       -- SURF availability goes through the same engine chain, so
@@ -1590,6 +1635,7 @@ return function(mod)
     -- walker sheet where one exists (bird/monster/seel/fairy), sized by
     -- its dex height.  Icon-only classes keep the bird.
     state.resolveMount = function(mon)
+      state.mountMon = mon
       local species = mon and mon.species
       Player.__freeFlyMount = (species
         and Sky.mountSprite(Game.data, species, "free_fly"))
@@ -1612,6 +1658,139 @@ return function(mod)
       end
     end
     MapMod.__freeFlyActive = function() return flying() end
+
+    -- ------- followers while airborne
+    -- The engine follower (and PokePC Followers riding it) knows bike and
+    -- surf, not flight, so it kept walking under the flyer, water and all.
+    -- A FLYING-type follower now trails through the air a little below
+    -- the mount; any other follower sits the flight out and walks back in
+    -- through the engine's own mid-map respawn path on landing.
+    local PF = require("src.world.PikachuFollower")
+
+    local function followerMon(game)
+      local pokepc = mod.find("PokePCFollowers_VoxelMerge")
+      if pokepc and pokepc.exports and pokepc.exports.activeMon then
+        local ok, mon = pcall(pokepc.exports.activeMon, game)
+        if ok and mon then return mon end
+      end
+      -- without a follower mod the engine follower is Yellow's Pikachu
+      for _, m in ipairs(game.save and game.save.party or {}) do
+        if m.species == "PIKACHU" and (m.hp or 0) > 0 then return m end
+      end
+    end
+
+    local function removeFollower(ow)
+      for i = #(ow.npcs or {}), 1, -1 do
+        local n = ow.npcs[i]
+        if n.pikachuFollower then
+          table.remove(ow.npcs, i)
+          for j = #(ow.entities or {}), 1, -1 do
+            if ow.entities[j] == n then table.remove(ow.entities, j) end
+          end
+        end
+      end
+    end
+
+    local FOLLOWER_FLAP = 6
+
+    -- airborne the follower wears the same art the mount resolver picks
+    -- (levitates sheet or the generic bird), sized by the same dex
+    -- scale, so the pair reads as one style; its own follower sprite is
+    -- stashed and handed back on landing
+    local function dressFollower(npc, game, species, lift)
+      npc.__freeFlyLift = lift
+      if npc.__freeFlyAirSpecies ~= species then
+        npc.__freeFlyAirSpecies = species
+        npc.__freeFlyAirSprite =
+          (Sky.mountSprite(game.data, species, "free_fly_follower"))
+        npc.__freeFlyAirScale = Sky.dexScale(game.data, species)
+      end
+      if npc.__freeFlyAirSprite then
+        npc.__freeFlyGroundSprite = npc.sprite
+        npc.sprite = npc.__freeFlyAirSprite
+      end
+      if npc.__freeFlyDressed then return end
+      npc.__freeFlyDressed = true
+      local NPCMod = require("src.world.NPC")
+      local basePhase = npc.walkPhase -- the follower's idle-aware phase
+      npc.walkPhase = function(self)
+        if (self.__freeFlyLift or 0) > 0 then
+          return math.floor(love.timer.getTime() * FOLLOWER_FLAP) % 2
+        end
+        return basePhase(self)
+      end
+      -- the lift rides pose(), so the 2D draw and voxel billboards agree
+      npc.pose = function(self)
+        local sprite, px, py, facing, phase, flip, hop = NPCMod.pose(self)
+        return sprite, px, py - (self.__freeFlyLift or 0), facing, phase,
+               flip, hop
+      end
+      npc.draw = function(self, camX, camY)
+        local l = self.__freeFlyLift or 0
+        if l <= 0 then return NPCMod.draw(self, camX, camY) end
+        local s = self.__freeFlyAirScale or 1
+        local fade = math.max(0.35, 1 - l / 90)
+        love.graphics.setColor(0, 0, 0, 0.3 * fade)
+        love.graphics.ellipse("fill", self.px + 8 - camX,
+                              self.py + 14 - camY, 5 * s, 2 * s)
+        love.graphics.setColor(1, 1, 1, 1)
+        if s ~= 1 then
+          local fx = math.floor(self.px + 8 - camX)
+          local fy = math.floor(self.py - l + 12 - camY)
+          love.graphics.push()
+          love.graphics.translate(fx, fy)
+          love.graphics.scale(s, s)
+          love.graphics.translate(-fx, -fy)
+        end
+        NPCMod.draw(self, camX, camY)
+        if s ~= 1 then love.graphics.pop() end
+      end
+    end
+
+    local function groundFollower(npc)
+      npc.__freeFlyLift = 0
+      if npc.__freeFlyGroundSprite then
+        npc.sprite = npc.__freeFlyGroundSprite
+        npc.__freeFlyGroundSprite = nil
+        npc.__freeFlyAirSpecies = nil
+      end
+    end
+
+    if not PF.__freeFlyWrapped then
+      PF.__freeFlyWrapped = true
+      PF.__freeFlyOrigUpdate = PF.update
+      PF.update = function(game, ow, ...)
+        local tick = PF.__freeFlyTick
+        if tick then return tick(game, ow, ...) end
+        return PF.__freeFlyOrigUpdate(game, ow, ...)
+      end
+    end
+    PF.__freeFlyTick = function(game, ow, ...)
+      local orig = PF.__freeFlyOrigUpdate
+      local npc = ow and PF.current(ow)
+      if not (ow and flying()) then
+        if npc then groundFollower(npc) end
+        return orig(game, ow, ...)
+      end
+      local mon = followerMon(game)
+      -- the mon carrying you cannot also trail you
+      if not mon or mon == state.mountMon
+         or not Sky.hasType(game.data, mon.species, "FLYING") then
+        removeFollower(ow)
+        return
+      end
+      -- hand the ground sprite back before the follower mod's own sync
+      -- runs, so it never sees our air sprite and rebuilds against it
+      if npc and npc.__freeFlyGroundSprite then
+        npc.sprite = npc.__freeFlyGroundSprite
+      end
+      local r = orig(game, ow, ...)
+      npc = PF.current(ow)
+      if npc then
+        dressFollower(npc, game, mon.species, math.max(0, state.alt - 8))
+      end
+      return r
+    end
 
     -- DRAMATIC_SHAPE's first/third-person FreeMove does its own collision
     -- (Map:isWalkableCell + Collision.occupied directly, never
@@ -1652,11 +1831,12 @@ return function(mod)
     end
 
     -- saves from before 0.9.0 have a taken gift but no marker on the mon;
-    -- re-mark the first FLY-knowing PIDGEY so BADGE CHECKS keeps exempting
-    -- it (runs on load and on every save swap)
+    -- re-mark the first FLY-knowing bird of the gift line so BADGE CHECKS
+    -- keeps exempting it (runs on load and on every save swap).  The whole
+    -- line matches so an old gift PIDGEY that evolved stays exempt too.
     local function migrateGiftMarker()
       local save = Game.save
-      if not (save and save.flags and save.flags[PIDGEY_TAKEN]) then return end
+      if not (save and save.flags and save.flags[GIFT_TAKEN]) then return end
       local lists = { save.party }
       for _, box in ipairs(save.boxes or {}) do lists[#lists + 1] = box end
       for _, list in ipairs(lists) do
@@ -1666,9 +1846,10 @@ return function(mod)
       end
       for _, list in ipairs(lists) do
         for _, mon in ipairs(list or {}) do
-          if mon.species == "PIDGEY" and knowsFly(mon) then
+          if (mon.species == "PIDGEY" or mon.species == "PIDGEOTTO"
+              or mon.species == GIFT_SPECIES) and knowsFly(mon) then
             mon.freeFlyGift = true
-            mod.log:info("marked the gift PIDGEY from an older save")
+            mod.log:info("marked the gift %s from an older save", mon.species)
             return
           end
         end
@@ -1678,6 +1859,6 @@ return function(mod)
     mod.events:on("save.loaded", migrateGiftMarker)
 
     -- a save loaded while already standing in Pallet Town gets its bird too
-    spawnPidgey()
+    spawnGift()
   end)
 end

@@ -9,7 +9,7 @@ return {
       "map-seam landing checks pass while airborne, so flight crosses onto water maps",
     },
     added = {
-      "a Pidgey in Pallet Town joins at L10 knowing FLY (one per save)",
+      "a Pidgeot in Pallet Town joins at L10 knowing FLY (one per save)",
       "riding visuals: bird mount + player top half from the player's cache, shadow, flap",
       "aerial interception of wild_skies flyers (optional dep, via its exports)",
       "options: altitude, fly speed, air encounters, trainer sight",
