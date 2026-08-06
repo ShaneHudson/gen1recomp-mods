@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.1 (unreleased)
+## 1.2.0
 
 - Voxel: the rooftop compensation is applied instantly instead of eased,
   which removes the hop the rider did over every fence and small object
