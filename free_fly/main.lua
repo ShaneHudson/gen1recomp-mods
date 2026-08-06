@@ -1045,6 +1045,14 @@ return function(mod)
       end
       ow.camera:follow(p.px, p.py - camLift,
                        Game.renderer:worldViewSize())
+      -- temporary flight instrumentation: one line per second
+      state.dbgT = (state.dbgT or 0) + dt
+      if state.dbgT >= 1 then
+        state.dbgT = 0
+        mod.log:info("dbg rung=%s camLift=%.0f camY=%.0f py=%.0f alt=%.0f",
+          tostring(Pipelines.level("voxel")), camLift or -1,
+          ow.camera.y or -1, p.py, p.freeFlyAlt or -1)
+      end
     end
 
     if not OC.__freeFlyWrapped then
