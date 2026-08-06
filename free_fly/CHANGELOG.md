@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3
+
+- Fix: the sea-crossing ask's cooldown never decayed, so answering TURN
+  BACK silently blocked all later attempts. It now re-asks on each try
+  (1-2s apart) until the player says CROSS.
+
 ## 0.9.2
 
 - Migration: saves from before 0.9.0 re-mark the gift PIDGEY (first

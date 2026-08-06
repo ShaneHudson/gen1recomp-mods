@@ -473,6 +473,9 @@ return function(mod)
         end
       end
       state.windCooldown = math.max(0, (state.windCooldown or 0) - dt)
+      -- TURN BACK is never remembered: once this expires the next push
+      -- into the seam asks again, until the player says CROSS
+      state.askCooldown = math.max(0, (state.askCooldown or 0) - dt)
       state.bob = (state.bob + dt * 4) % (2 * math.pi)
       local hover = state.phase == "flying" and math.sin(state.bob) * 2 or 0
       -- altitude is absolute: the voxel scene adds the ground height back
