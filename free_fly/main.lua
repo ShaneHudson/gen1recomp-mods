@@ -164,17 +164,19 @@ return function(mod)
   -- ------- public hooks, all pass-through unless airborne
 
   mod.hooks:wrap("movement.collision", function(next, allowed, ctx)
-    if flying() and ctx.mover and ctx.mover.freeFlying
-       and (ctx.reason == "tile" or ctx.reason == "entity") then
-      -- very tall buildings stay walls even to a flyer: you ride up to
-      -- the facade and bump, like a high window ledge
+    if flying() and ctx.mover and ctx.mover.freeFlying then
+      -- very tall buildings stay walls even to a flyer, sealed rooftop
+      -- plazas included: you ride up to the facade and bump
       local lm = state.landmark
       if lm and lm.cells and ctx.map and lm.mapId == ctx.map.id
          and lm.cells[ctx.toY * lm.w + ctx.toX] then
-        return next(allowed, ctx)
+        ctx.reason = "tile"
+        return false
       end
-      ctx.reason = nil
-      return true
+      if ctx.reason == "tile" or ctx.reason == "entity" then
+        ctx.reason = nil
+        return true
+      end
     end
     return next(allowed, ctx)
   end)
@@ -563,13 +565,11 @@ return function(mod)
           state.prefetchQueue[#state.prefetchQueue + 1] = id
         end
       end
-      local defs = Game.data.maps
+      -- one hop only: the engine's LRU protects current+neighbours, so a
+      -- second hop churned the cache (evict, re-warm, re-analyse) every
+      -- crossing -- the Cycling Road corridor made that visibly heavy
       for _, conn in pairs((ow.map.def and ow.map.def.connections) or {}) do
         push(conn.map)
-        local dest = conn.map and defs[conn.map]
-        for _, conn2 in pairs((dest and dest.connections) or {}) do
-          push(conn2.map)
-        end
       end
     end
 
@@ -580,27 +580,10 @@ return function(mod)
       end
       local id = table.remove(state.prefetchQueue)
       if not id then return end
-      local okLoad, m = pcall(MapLoader.load, Game.data, id)
-      if not okLoad then
-        state.prefetchQueue = {}
-        return
-      end
-      -- voxel: also queue the neighbour-grade chunk mesh, with exactly
-      -- the call the scene makes for its own neighbours (body-only,
-      -- non-urgent, consumed by DRAMATIC_SHAPE's own build pump), so a
-      -- fast flyer's destination never drops to the flat 2D fallback
-      if m and hasVoxel and Pipelines.level("voxel") > 0 then
-        if state.mesher == nil then
-          local exports = Game.mods and Game.mods.exports
-          local V = exports and exports.DRAMATIC_SHAPE
-            and exports.DRAMATIC_SHAPE.lib
-          local okM, cm = pcall(function()
-            return V and V.require("ChunkMesher")
-          end)
-          state.mesher = (okM and cm and cm.request and cm) or false
-        end
-        if state.mesher then pcall(state.mesher.request, m, true) end
-      end
+      -- engine map cache only; the voxel scene already body-meshes its
+      -- own one-hop neighbours, so extra mesh requests just fed the churn
+      local okLoad = pcall(MapLoader.load, Game.data, id)
+      if not okLoad then state.prefetchQueue = {} end
     end
 
     -- takeoff with the first eligible partner: the FLY WHISTLE's action,
@@ -821,6 +804,44 @@ return function(mod)
               queue[#queue + 1] = { cx - 1, cy }
               queue[#queue + 1] = { cx, cy + 1 }
               queue[#queue + 1] = { cx, cy - 1 }
+            end
+          end
+
+          -- seal enclosed walkable pockets (the dept store's rooftop
+          -- plaza): walkable cells inside the footprint's box that can't
+          -- be walked into from the box border are part of the building
+          -- while airborne.  Streets crossing near the complex reach the
+          -- border and are never touched.
+          local minx, maxx = warp.x - 12, warp.x + 12
+          local miny, maxy = warp.y - 12, warp.y + 1
+          local open, oq = {}, {}
+          local function seed(cx, cy)
+            local key = cy * w + cx
+            if not open[key] and map:inBounds(cx, cy)
+               and map:isWalkableCell(cx, cy) then
+              open[key] = true
+              oq[#oq + 1] = { cx, cy }
+            end
+          end
+          for cx = minx, maxx do seed(cx, miny); seed(cx, maxy) end
+          for cy = miny, maxy do seed(minx, cy); seed(maxx, cy) end
+          while #oq > 0 do
+            local c = table.remove(oq)
+            local cx, cy = c[1], c[2]
+            for _, d in ipairs({ {1,0}, {-1,0}, {0,1}, {0,-1} }) do
+              local nx, ny = cx + d[1], cy + d[2]
+              if nx >= minx and nx <= maxx and ny >= miny and ny <= maxy then
+                seed(nx, ny)
+              end
+            end
+          end
+          for cy = miny, maxy do
+            for cx = minx, maxx do
+              local key = cy * w + cx
+              if map:inBounds(cx, cy) and map:isWalkableCell(cx, cy)
+                 and not open[key] then
+                cells[key] = true
+              end
             end
           end
         end

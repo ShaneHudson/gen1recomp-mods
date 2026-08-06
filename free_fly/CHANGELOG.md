@@ -26,6 +26,13 @@
   shape profile marks walls "upright"; trees, fences and signs are other
   classes and never chain the wall into a neighbour), wide enough to
   cover Silph Co's full drawn slab, so its rear face blocks too.
+  Enclosed walkable pockets inside a tower footprint (the dept store's
+  rooftop plaza) seal while airborne, so towers can't be crossed via
+  their roofs; walking out onto a roof and taking off still works.
+- Performance: seam prefetch is one hop only and no longer queues voxel
+  meshes. The two-hop version fought the engine's LRU (evict, re-warm,
+  re-analyse every crossing), which is what dragged the Cycling Road
+  corridor down; the voxel scene already meshes its own neighbours.
 - Voxel ride height is a constant total above the ground plane (>= 66px,
   measured against the profile's flat 16px solids and the scene's 48px
   volume cap), so every small building clears at default altitude
