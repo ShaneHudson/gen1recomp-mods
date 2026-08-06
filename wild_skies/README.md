@@ -14,6 +14,10 @@ level. High flyers never trigger battles from the ground. If you also
 have [free_fly](../free_fly) installed, flying into one starts its
 battle mid-air.
 
+[![Watch the demo](https://cdn.loom.com/sessions/thumbnails/5867c264456040c8a37acc7e32f4c827-cd84e04e815a6621.gif)](https://www.loom.com/share/5867c264456040c8a37acc7e32f4c827)
+
+*Click through for the demo video.*
+
 ## Options
 
 | Option | Default | What it does |
