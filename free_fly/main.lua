@@ -523,6 +523,43 @@ return function(mod)
     end
 
     local MapField = require("src.world.FieldDefaults")
+    local MapLoader = require("src.world.MapLoader")
+
+    -- a fast flyer hits seams constantly, and each crossing loads the
+    -- destination plus its whole neighbor ring (rebuildNeighbors).  While
+    -- airborne, warm the MapLoader cache ahead of time: the current map's
+    -- connections and, one hop further, the neighbors of each of those.
+    -- One load per tick, so the prefetch can never spike a frame itself.
+    local function refillPrefetch(ow)
+      state.prefetchQueue = {}
+      local seen = {}
+      local function push(id)
+        if id and not seen[id] and not MapLoader.cached(id) then
+          seen[id] = true
+          state.prefetchQueue[#state.prefetchQueue + 1] = id
+        end
+      end
+      local defs = Game.data.maps
+      for _, conn in pairs((ow.map.def and ow.map.def.connections) or {}) do
+        push(conn.map)
+        local dest = conn.map and defs[conn.map]
+        for _, conn2 in pairs((dest and dest.connections) or {}) do
+          push(conn2.map)
+        end
+      end
+    end
+
+    local function tickPrefetch(ow)
+      if state.prefetchFor ~= ow.map.id then
+        state.prefetchFor = ow.map.id
+        refillPrefetch(ow)
+      end
+      local id = table.remove(state.prefetchQueue)
+      if id and not MapLoader.cached(id) then
+        local ok = pcall(MapLoader.load, Game.data, id)
+        if not ok then state.prefetchQueue = {} end
+      end
+    end
 
     -- takeoff with the first eligible partner: the FLY WHISTLE's action,
     -- same gates as the FREEFLY menu entry.  Returns ok, failure text.
@@ -774,6 +811,7 @@ return function(mod)
           end
         end
       end
+      tickPrefetch(ow)
       state.expectBattle = (state.expectBattle and state.expectBattle > dt)
         and (state.expectBattle - dt) or nil
       state.windCooldown = math.max(0, (state.windCooldown or 0) - dt)

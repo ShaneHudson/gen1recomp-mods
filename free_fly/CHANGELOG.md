@@ -5,6 +5,11 @@
 - Voxel: the rooftop compensation is applied instantly instead of eased,
   which removes the hop the rider did over every fence and small object
   (the scene snaps its ground height per cell; the ease lagged it).
+- Seam prefetch: while airborne, the maps ahead (every connection of
+  the current map, and their connections one hop further) are warmed
+  into the engine's map cache at one load per tick, so fast flight
+  crosses seams without the load hitch. Voxel chunk meshes already ride
+  DRAMATIC_SHAPE's own async build queue.
 - Ledges no longer hijack an airborne step into the vanilla hop (the
   arc used to stack on the flight lift); a flyer just crosses them.
 - Voxel: visual flight height raised to 75% (was 60%), balanced by one
