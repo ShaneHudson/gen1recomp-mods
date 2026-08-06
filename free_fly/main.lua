@@ -463,6 +463,19 @@ return function(mod)
       return ok and got or 0
     end
 
+    -- the shape profile's art class for one cell, or nil when the voxel
+    -- lib is unreachable
+    local function tileArtAt(map, cx, cy)
+      if tileShape == nil then tileHeightAt(map, cx, cy) end
+      if not tileShape then return nil end
+      local ok, got = pcall(function()
+        if not map:inBounds(cx, cy) then return nil end
+        local s = tileShape.forMap(map)[map:cellTile(cx, cy)]
+        return s and s.art or "none"
+      end)
+      return ok and got or nil
+    end
+
     -- returns gh, voxelActive
     local function voxelGroundHeight(ow, p)
       if not hasVoxel or Pipelines.level("voxel") <= 0 then return 0, false end
@@ -777,15 +790,16 @@ return function(mod)
         if floorFamilySize(warp.destMap) >= 4 then
           -- flood the solid footprint starting above the door, bounded
           -- so it can never wander off into the border-tree ring
-          -- the footprint floods upward from the door through building
-          -- cells only: fences and shrubs are 6px in the shape profile
-          -- and must not chain the flood into a NEIGHBOURING building
+          -- the footprint floods through BUILDING cells only.  In the
+          -- shape profile, building walls are "upright"; trees are
+          -- "cylinder", fences "post", signs "billboard" (measured over
+          -- Saffron), so those never chain the wall into a neighbour.
           local function buildingCell(cx, cy)
             if not map:inBounds(cx, cy) or map:isWalkableCell(cx, cy) then
               return false
             end
-            local h = tileHeightAt(map, cx, cy)
-            return h == nil or h >= 16
+            local art = tileArtAt(map, cx, cy)
+            return art == nil or art == "upright"
           end
           local queue = { { warp.x, warp.y - 1 } }
           local seen, budget = {}, 400
@@ -794,8 +808,11 @@ return function(mod)
             local cx, cy = cell[1], cell[2]
             local key = cy * w + cx
             local dx, dy = cx - warp.x, cy - warp.y
+            -- generous bounds: the fence exclusion is what stops spill
+            -- into neighbours, so the box only needs to contain the
+            -- biggest tower (Silph) in every direction from its door
             if not seen[key]
-               and math.abs(dx) <= 6 and dy >= -7 and dy <= 0
+               and math.abs(dx) <= 12 and dy >= -12 and dy <= 1
                and buildingCell(cx, cy) then
               seen[key] = true
               cells[key] = true

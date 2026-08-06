@@ -22,9 +22,10 @@
   qualify (Seafoam, Mt Moon, Victory Road stay flyable), and the bar is
   four floors above ground, so Cinnabar's mansion with its small drawn
   exterior stays fly-over while the true towers block. The footprint
-  floods upward from the tower's door through building cells only
-  (fences and shrubs are 6px in the shape profile and no longer chain
-  the wall into neighbouring small buildings).
+  floods from the tower's door through building-class cells only (the
+  shape profile marks walls "upright"; trees, fences and signs are other
+  classes and never chain the wall into a neighbour), wide enough to
+  cover Silph Co's full drawn slab, so its rear face blocks too.
 - Voxel ride height is a constant total above the ground plane (>= 66px,
   measured against the profile's flat 16px solids and the scene's 48px
   volume cap), so every small building clears at default altitude
