@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased
+## 1.3.0
 
 - Takeoffs and landings move like the wild flyers'. The mount climbs on
   a diagonal (a short forward drift, dropped the moment you steer), and

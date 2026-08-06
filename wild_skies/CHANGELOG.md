@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0
+
+- Lockstep release with free_fly 1.3.0; no functional changes.
+
 ## 1.2.0
 
 - Forest sky-life, sparse by design: Viridian Forest gets the ambient
