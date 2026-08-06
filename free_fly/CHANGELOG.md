@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.2
+
+- Cockpit view keys off FirstPerson.hidePlayer() (true only when the eye
+  hides your card) instead of engaged(), which was also true in third
+  person; a one-shot log line reports why the overlay is or isn't
+  drawing.
+- AIR ENCOUNTERS now governs aerial interception. Airborne grass rolls
+  ended with 0.11.1's step-trigger skip, so visible birds are the one
+  source of airborne battles, and this option is their switch.
+
 ## 0.11.1
 
 - Step triggers no longer fire under an airborne player: locked-door

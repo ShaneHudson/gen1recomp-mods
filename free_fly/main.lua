@@ -307,14 +307,30 @@ return function(mod)
   -- rider still expects to see their bird, so draw it into the HUD pass:
   -- bottom-center, back-facing, flapping, like a cockpit view
   local hudQuads = {}
+  local hudLogged = false
   mod.hooks:wrap("render.hud", function(next, game, vp)
     local out = next(game, vp)
     if not flying() then return out end
-    pcall(function()
+    local ok, err = pcall(function()
       local exports = game.mods and game.mods.exports
       local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
       local FP = V and V.require and V.require("FirstPerson")
-      if not (FP and FP.engaged and FP.engaged()) then return end
+      -- hidePlayer() is true exactly when the first-person eye hides the
+      -- player's card -- the one situation a rider needs a cockpit view
+      -- (third person keeps showing the mount card itself)
+      if not (FP and FP.hidePlayer and FP.hidePlayer()) then
+        if not hudLogged then
+          hudLogged = true
+          mod.log:info("cockpit idle (%s)",
+            not FP and "no DRAMATIC_SHAPE lib"
+            or not FP.hidePlayer and "no hidePlayer api" or "card visible")
+        end
+        return
+      end
+      if not hudLogged then
+        hudLogged = true
+        mod.log:info("cockpit view active")
+      end
       local Player = require("src.world.Player")
       local mount = Player.__freeFlyMount or Player.__freeFlyBird
       local img = mount and mount.image
@@ -333,6 +349,10 @@ return function(mod)
       love.graphics.setColor(1, 1, 1, 1)
       love.graphics.draw(img, hudQuads[key], x, y, 0, s, s)
     end)
+    if not ok and not hudLogged then
+      hudLogged = true
+      mod.log:warn("cockpit overlay failed: %s", tostring(err))
+    end
     return out
   end)
 
@@ -527,7 +547,7 @@ return function(mod)
         -- exact battle, through its exports rather than its internals
         if (state.interceptCooldown or 0) > 0 then
           state.interceptCooldown = state.interceptCooldown - dt
-        else
+        elseif mod.options:get("encounters") then
           if state.skiesTake == nil then
             local skies = mod.find("wild_skies")
             state.skiesTake = (skies and skies.exports
