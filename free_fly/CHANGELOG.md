@@ -8,8 +8,11 @@
 - Seam prefetch: while airborne, the maps ahead (every connection of
   the current map, and their connections one hop further) are warmed
   into the engine's map cache at one load per tick, so fast flight
-  crosses seams without the load hitch. Voxel chunk meshes already ride
-  DRAMATIC_SHAPE's own async build queue.
+  crosses seams without the load hitch. In voxel, the same prefetch also
+  queues each warmed map's chunk mesh through DRAMATIC_SHAPE's own build
+  pump (the identical body-only request its scene makes for neighbours),
+  so a flown-into map doesn't drop to the flat 2D fallback while it
+  meshes.
 - Ledges no longer hijack an airborne step into the vanilla hop (the
   arc used to stack on the flight lift); a flyer just crosses them.
 - Voxel: visual flight height raised to 75% (was 60%), balanced by one

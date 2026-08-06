@@ -555,9 +555,27 @@ return function(mod)
         refillPrefetch(ow)
       end
       local id = table.remove(state.prefetchQueue)
-      if id and not MapLoader.cached(id) then
-        local ok = pcall(MapLoader.load, Game.data, id)
-        if not ok then state.prefetchQueue = {} end
+      if not id then return end
+      local okLoad, m = pcall(MapLoader.load, Game.data, id)
+      if not okLoad then
+        state.prefetchQueue = {}
+        return
+      end
+      -- voxel: also queue the neighbour-grade chunk mesh, with exactly
+      -- the call the scene makes for its own neighbours (body-only,
+      -- non-urgent, consumed by DRAMATIC_SHAPE's own build pump), so a
+      -- fast flyer's destination never drops to the flat 2D fallback
+      if m and hasVoxel and Pipelines.level("voxel") > 0 then
+        if state.mesher == nil then
+          local exports = Game.mods and Game.mods.exports
+          local V = exports and exports.DRAMATIC_SHAPE
+            and exports.DRAMATIC_SHAPE.lib
+          local okM, cm = pcall(function()
+            return V and V.require("ChunkMesher")
+          end)
+          state.mesher = (okM and cm and cm.request and cm) or false
+        end
+        if state.mesher then pcall(state.mesher.request, m, true) end
       end
     end
 
