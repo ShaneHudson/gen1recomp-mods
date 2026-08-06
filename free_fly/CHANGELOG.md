@@ -2,9 +2,13 @@
 
 ## 1.1.0
 
-- Eligibility fix: a mon that knows FLY qualifies if it can learn HM02 OR
-  is FLYING-type. Red/Blue's Charizard cannot learn HM02 (Yellow added
-  it), so the strict machine check wrongly hid FREEFLY on it.
+- Eligibility defers to the engine and other mods: the species must be
+  HM02-compatible per the MERGED data (so compatibility-expanding mods
+  count), and "knows FLY" is decided through the engine's
+  fieldmove.eligibility chain, so HM-relaxing mods like qol_toggles'
+  FIELD MOVES ALL unlock FREEFLY exactly as they unlock FLY itself.
+  Water landings route SURF through the same chain. This mod adds no
+  eligibility rules of its own.
 - Quick Select integration: with jj_quick_select installed (and only
   then), a FLY WHISTLE key item appears in the bag. Register it to a
   SELECT+direction slot and it toggles flight: takeoff with the first

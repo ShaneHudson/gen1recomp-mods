@@ -106,13 +106,28 @@ return function(mod)
     return false
   end
 
-  -- knows FLY, and is a plausible flyer: HM02-compatible or FLYING-type.
-  -- The type check matters because Red/Blue's Charizard famously cannot
-  -- learn HM02 (Yellow added it), yet it is obviously a ride.
-  local function eligibleFlyer(game, mon)
-    return knowsFly(mon)
-      and (canLearnFly(game, mon)
-           or Sky.hasType(game.data, mon.species, "FLYING"))
+  -- who may field-use a move is the ENGINE'S question, not this mod's:
+  -- OverworldState:partyKnows routes through the fieldmove.eligibility
+  -- hook chain, so HM-relaxing mods (qol_toggles' FIELD MOVES ALL) and
+  -- anything else wrapping that hook decide alongside the vanilla check.
+  -- Returns the mon the chain nominates, or nil.
+  local function fieldMoveUser(ow, moveId)
+    if ow and ow.partyKnows then
+      local ok, user = pcall(ow.partyKnows, ow, moveId)
+      if ok then return user end
+    end
+    return nil
+  end
+
+  -- a mon qualifies when its species can learn HM02 (the MERGED tmhm, so
+  -- compatibility-expanding mods count) and it either knows FLY or a mod
+  -- has relaxed the field-move rules through the engine's own chain
+  local function eligibleFlyer(game, ow, mon)
+    if not canLearnFly(game, mon) then return false end
+    if knowsFly(mon) then return true end
+    local Runtime = require("src.mods.Runtime")
+    return Runtime.wantsHook("fieldmove.eligibility")
+      and fieldMoveUser(ow, "FLY") ~= nil
   end
 
   local function badgeOk(game, mon)
@@ -186,7 +201,7 @@ return function(mod)
     if type(out) ~= "table" then return out end
     local ow = ctx and ctx.overworld
     if not (ow and ow.map and ow.map.def) or flying() then return out end
-    if not (eligibleFlyer(game, mon) and badgeOk(game, mon)) then return out end
+    if not (eligibleFlyer(game, ow, mon) and badgeOk(game, mon)) then return out end
     if ow.player and ow.player.onBike then return out end
     local Map = require("src.world.Map")
     local FieldDefaults = require("src.world.FieldDefaults")
@@ -524,7 +539,7 @@ return function(mod)
         return false, "There's no open\nsky here!"
       end
       for _, mon in ipairs(save.party or {}) do
-        if eligibleFlyer(Game, mon) and badgeOk(Game, mon) then
+        if eligibleFlyer(Game, ow, mon) and badgeOk(Game, mon) then
           -- unwind any menus so the takeoff starts on the overworld
           while Game.stack:top() and not Game.stack:top().isOverworld do
             Game.stack:pop()
@@ -676,8 +691,11 @@ return function(mod)
       syncRider(ow, p)
       dt = dt or 1 / 60
       local groundOk = ow.map:isWalkableCell(p.cellX, p.cellY)
+      -- SURF availability goes through the same engine chain, so
+      -- HM-relaxing mods unlock water landings exactly as they unlock
+      -- the SURF field move itself
       local waterOk = not groundOk and ow.map:isWaterCell(p.cellX, p.cellY)
-        and partyKnowsSurf(Game.save)
+        and (fieldMoveUser(ow, "SURF") ~= nil or partyKnowsSurf(Game.save))
         and (not mod.options:get("badges")
              or (Game.save.inventory and Game.save.inventory.SOULBADGE))
       local canLand = not p.moving and (groundOk or waterOk)

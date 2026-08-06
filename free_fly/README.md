@@ -20,9 +20,12 @@ in voxel.
 
 ## Getting airborne
 
-1. Have a party member that knows FLY. The species must be able to
-   learn HM02 or be a FLYING type (the type check is what lets Red and
-   Blue's Charizard carry you, since only Yellow made it HM02-compatible).
+1. Have a party member that can use FLY. The species must be
+   HM02-compatible in the game data (mods that expand compatibility
+   count), and either know the move or have it unlocked by a mod that
+   relaxes field-move rules, such as qol_toggles' FIELD MOVES ALL. This
+   also means Red and Blue's Charizard needs such a mod, since only
+   Yellow made it HM02-compatible.
 2. Open its party submenu and pick FREEFLY.
 3. Move as normal. The shadow under you turns green over ground you can
    land on; press the B button (X on keyboard) to set down. Blacking out also grounds you.
