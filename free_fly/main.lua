@@ -1029,8 +1029,13 @@ return function(mod)
         -- the camera follows the constant TOTAL, never the varying
         -- per-cell part: roofs mix zero-height flat-class cells into
         -- their upper rows, and a camera tracking freeFlyAlt lurched
-        -- there while the card itself stayed level
-        camLift = total * 0.65
+        -- there while the card itself stayed level.  The follow factor
+        -- scales with the voxel rung: steeper pitches project vertical
+        -- offsets taller on screen, so the camera keeps the rider near
+        -- centre at 75 instead of leaving it distant at the frame top.
+        local FOLLOW = { 0.65, 0.65, 0.78, 0.95 }
+        local rung = Pipelines.level("voxel") or 0
+        camLift = total * (FOLLOW[rung] or 0.65)
       else
         p.freeFlyAlt = lift
         camLift = lift

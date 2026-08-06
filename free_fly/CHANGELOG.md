@@ -8,7 +8,9 @@
   facade-blocked. The camera follows the constant total rather than the
   per-cell part, which removes the upward lurch over the top half of
   roofs (their upper rows mix in zero-height flat-class cells; the card
-  itself was always level, the camera wasn't).
+  itself was always level, the camera wasn't). The follow tightens with
+  the voxel rung, so at 75 the rider sits near centre instead of
+  reading far away at the top of the frame.
 
 ## 1.2.0
 
