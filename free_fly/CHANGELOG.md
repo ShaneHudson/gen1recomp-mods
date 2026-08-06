@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0
+
+- 2D riding reads as riding: the rider draws first, tucked low, and the
+  mount draws over it, so the crop line hides behind the mount's body
+  instead of a head floating above a gap.
+- Voxel: the visual flight height runs at 60% while a voxel pipeline is
+  active, so the card stops looming at the pitched camera; 2D keeps the
+  full altitude, and rooftop clearance still applies on top.
+
 ## 0.11.3
 
 - While airborne, the only wild battle that can start is one this mod

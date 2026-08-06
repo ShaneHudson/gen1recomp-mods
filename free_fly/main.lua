@@ -389,11 +389,12 @@ return function(mod)
     local hasVoxel = Pipelines.get and Pipelines.get("voxel") ~= nil
     local tileShape        -- nil = not tried, false = unavailable
     local ghCache = {}
+    -- returns gh, voxelActive
     local function voxelGroundHeight(ow, p)
-      if not hasVoxel or Pipelines.level("voxel") <= 0 then return 0 end
+      if not hasVoxel or Pipelines.level("voxel") <= 0 then return 0, false end
       if ghCache.map == ow.map and ghCache.x == p.cellX
          and ghCache.y == p.cellY then
-        return ghCache.h
+        return ghCache.h, true
       end
       if tileShape == nil then
         tileShape = false
@@ -415,7 +416,7 @@ return function(mod)
         h = (ok and got) or 0
       end
       ghCache.map, ghCache.x, ghCache.y, ghCache.h = ow.map, p.cellX, p.cellY, h
-      return h
+      return h, true
     end
 
     -- does the badge-gate data forbid an airborne crossing into mapId?
@@ -582,7 +583,10 @@ return function(mod)
       -- under the card, so standing geometry eats into the visual lift
       -- instead of stacking on top of it (min 10 keeps clearance)
       local lift = state.alt + hover
-      local gh = voxelGroundHeight(ow, p)
+      local gh, voxelOn = voxelGroundHeight(ow, p)
+      -- the pitched voxel camera makes a high card loom at the lens, so
+      -- the visual lift shrinks there; 2D keeps the full height
+      if voxelOn then lift = lift * 0.6 end
       local target = gh > 0 and math.max(10, lift - gh) or lift
       local cur = p.freeFlyAlt or 0
       p.freeFlyAlt = cur + (target - cur) * math.min(1, dt * 10)
@@ -788,6 +792,12 @@ return function(mod)
       love.graphics.setColor(1, 1, 1, 1)
       local ry = self.py - math.floor(lift + 0.5)
       local flap = math.floor(love.timer.getTime() * 8) % 2
+      -- rider FIRST, tucked low, then the mount over it: the mount's body
+      -- hides the crop line, so the figure reads as seated behind its
+      -- neck instead of a head floating above it
+      local walk = self.freeFlyWalkSprite or self.sprite
+      walk:draw(self.px, ry - math.floor(1 + 2 * s + 0.5),
+                camX, camY, self.facing, 0, false, true)
       if s ~= 1 then
         local fx = math.floor(self.px + 8 - camX)
         local fy = math.floor(ry + 12 - camY)
@@ -798,11 +808,6 @@ return function(mod)
       end
       bird:draw(self.px, ry, camX, camY, self.facing, flap, false)
       if s ~= 1 then love.graphics.pop() end
-      -- the rider sits higher on a taller mount; always the walking sheet
-      -- (p.sprite is the mount while airborne)
-      local walk = self.freeFlyWalkSprite or self.sprite
-      walk:draw(self.px, ry - math.floor(3 + 3 * s + 0.5),
-                camX, camY, self.facing, 0, false, true)
     end
 
     local SpriteRenderer = require("src.render.SpriteRenderer")
