@@ -1018,24 +1018,14 @@ return function(mod)
       local lift = state.alt + hover
       local gh, voxelOn = voxelGroundHeight(ow, p)
       if voxelOn then
-        -- 50px base ride, pushing up to clearance height only while
-        -- solids sit within two cells of the heading, easing back after.
+        -- constant 52px TOTAL ride: the scene's building volumes cap at
+        -- 48px from the ground plane (their mesher's MAX_ROWS), so this
+        -- clears every small building everywhere with no climbs at all.
         -- The per-cell gh subtraction stays INSTANT, which is what keeps
-        -- fences from reading as hops; only the cruise target eases.
-        -- Towers are facade-blocked regardless.
-        local want = 50
-        local d = require("src.world.Collision").DELTA[p.facing] or { 0, 0 }
-        for step = 0, 2 do
-          local h = tileHeightAt(ow.map, p.cellX + d[1] * step,
-                                 p.cellY + d[2] * step) or 0
-          if h > 0 then want = 66 break end
-        end
-        local cur = state.vTotal or want
-        local rate = (want > cur and 100 or 45) * dt
-        state.vTotal = cur + math.max(-rate, math.min(rate, want - cur))
-        p.freeFlyAlt = math.max(10, state.vTotal - gh)
+        -- fences from reading as hops.  Towers are facade-blocked.
+        local total = math.max(lift * 0.75, 52)
+        p.freeFlyAlt = total - gh
       else
-        state.vTotal = nil
         p.freeFlyAlt = lift
       end
       -- the camera tracks PART of the lift in voxel: the card rides a

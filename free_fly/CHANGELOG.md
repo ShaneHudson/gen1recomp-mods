@@ -2,9 +2,10 @@
 
 ## unreleased
 
-- Voxel: 50px base ride, pushing up to clearance (66px) only while
-  solids sit within two cells of the heading and easing back after;
-  fence-hop immunity unchanged (only the cruise target eases).
+- Voxel: constant 52px ride. The scene's building volumes cap at 48px,
+  so this clears every small building everywhere with no climbs or
+  push-ups at all; fence-hop immunity unchanged. Towers stay
+  facade-blocked.
 
 ## 1.2.0
 
