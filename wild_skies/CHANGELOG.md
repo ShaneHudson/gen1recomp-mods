@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0
+
+- Sea skies: outdoor maps with no flying grass slots (Routes 19-21) get a
+  sparse ambient pool (Pidgey/Spearow lines by day, Zubat line at night)
+  at a reduced cap and longer cooldown.
+- Behavior repertoire: some flyers land mid-crossing and rest, some start
+  perched and flush away when the player comes within 2 cells; resting
+  birds stand and peck instead of flapping.
+- Height variety: about a third fly high, and the shadow fades and
+  tightens with altitude as a depth cue.
+
 ## 0.3.2
 
 - Shared helpers (icon-class mounts, dex scale, type/move checks) moved
