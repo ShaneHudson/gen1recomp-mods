@@ -166,6 +166,13 @@ return function(mod)
   mod.hooks:wrap("movement.collision", function(next, allowed, ctx)
     if flying() and ctx.mover and ctx.mover.freeFlying
        and (ctx.reason == "tile" or ctx.reason == "entity") then
+      -- very tall buildings stay walls even to a flyer: you ride up to
+      -- the facade and bump, like a high window ledge
+      local lm = state.landmark
+      if lm and lm.cells and ctx.map and lm.mapId == ctx.map.id
+         and lm.cells[ctx.toY * lm.w + ctx.toX] then
+        return next(allowed, ctx)
+      end
       ctx.reason = nil
       return true
     end
@@ -694,6 +701,16 @@ return function(mod)
         local tap = was and not down and state.qsArmed
         if slotDir or tap then state.qsArmed = nil end
 
+        -- consume BEFORE the inner chain runs: quick select's
+        -- between-steps branch reads the raw press queue directly, which
+        -- method blinding cannot hide, and it was still answering the tap
+        -- with "You don't have a BICYCLE"
+        if slotDir then
+          consumeQueued(input, { "select", slotDir })
+        elseif tap then
+          consumeQueued(input, { "select" })
+        end
+
         local origDown, origWas = input.isDown, input.wasPressed
         input.isDown = function(self, b)
           if b == "select" then return false end
@@ -708,10 +725,8 @@ return function(mod)
         if not ok then error(err, 0) end
 
         if slotDir then
-          consumeQueued(input, { "select", slotDir })
           pcall(function() quickSelect.exports.activate(game, slotDir) end)
         elseif tap then
-          consumeQueued(input, { "select" })
           local impl = ItemEffects.__freeFlyUse
           if impl then
             local kind, msgs = impl("FLY_WHISTLE", false)
@@ -723,9 +738,62 @@ return function(mod)
       end, 600)
     end
 
+    -- "tall" is derived from the game's own data, never an authored
+    -- list: an exterior door whose interior spans three or more floor
+    -- maps (the dept store, Silph Co, the tower, the mansion) marks its
+    -- building's solid footprint as a no-fly wall.  Anything smaller
+    -- stays fly-over, and modded towers qualify automatically.
+    local function floorFamilySize(destId)
+      if type(destId) ~= "string" then return 0 end
+      local base = destId:gsub("_B?%d+F$", ""):gsub("_ROOF$", "")
+      if base == destId then return 1 end
+      local n = 0
+      for id in pairs(Game.data.maps) do
+        if id == base or id:find("^" .. base .. "_") then n = n + 1 end
+      end
+      return n
+    end
+
+    local function landmarkCellsFor(ow)
+      local map = ow.map
+      local w = map.widthCells or ((map.def and map.def.width or 0) * 2)
+      local cells = {}
+      for _, warp in ipairs((map.def and map.def.warps) or {}) do
+        if floorFamilySize(warp.destMap) >= 3 then
+          -- flood the solid footprint starting above the door, bounded
+          -- so it can never wander off into the border-tree ring
+          local queue = { { warp.x, warp.y - 1 } }
+          local seen, budget = {}, 400
+          while #queue > 0 and budget > 0 do
+            local cell = table.remove(queue)
+            local cx, cy = cell[1], cell[2]
+            local key = cy * w + cx
+            if not seen[key]
+               and math.abs(cx - warp.x) <= 8 and math.abs(cy - warp.y) <= 8
+               and map:inBounds(cx, cy)
+               and not map:isWalkableCell(cx, cy) then
+              seen[key] = true
+              cells[key] = true
+              budget = budget - 1
+              queue[#queue + 1] = { cx + 1, cy }
+              queue[#queue + 1] = { cx - 1, cy }
+              queue[#queue + 1] = { cx, cy + 1 }
+              queue[#queue + 1] = { cx, cy - 1 }
+            end
+          end
+        end
+      end
+      return { mapId = map.id, w = w, cells = cells }
+    end
+
     OC.__freeFlyTick = function(ow, dt)
       local p = ow.player
       if not p then return end
+      if ow.map and (not state.landmark
+                     or state.landmark.mapId ~= ow.map.id) then
+        local ok, lm = pcall(landmarkCellsFor, ow)
+        state.landmark = ok and lm or { mapId = ow.map.id, w = 1, cells = {} }
+      end
       if not flying() then
         if p.freeFlyAlt then p.freeFlyAlt, p.freeFlying = nil, nil end
         if p.freeFlyWalkSprite then

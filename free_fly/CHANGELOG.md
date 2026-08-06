@@ -13,6 +13,15 @@
   pump (the identical body-only request its scene makes for neighbours),
   so a flown-into map doesn't drop to the flat 2D fallback while it
   meshes.
+- Very tall buildings are no-fly walls: an exterior door whose interior
+  spans three or more floor maps (dept store, Silph Co, Pokemon Tower,
+  Celadon Mansion) marks its building footprint as blocked while
+  airborne, so you fly up to the facade and bump instead of clipping
+  through. Derived from map data, never an authored list; small houses
+  stay fly-over.
+- Fix: tapping SELECT with no bicycle no longer also shows Quick
+  Select's "You don't have a BICYCLE" (its raw press-queue branch saw
+  the tap before we consumed it).
 - Ledges no longer hijack an airborne step into the vanilla hop (the
   arc used to stack on the flight lift); a flyer just crosses them.
 - Voxel: visual flight height raised to 75% (was 60%), balanced by the
