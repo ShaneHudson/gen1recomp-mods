@@ -568,6 +568,19 @@ return function(mod)
     end
     OC.__freeFlyCrossGate = nil
 
+    -- forced-movement tiles (Cycling Road's mount-or-refuse, forced surf
+    -- currents) don't grab what flies over them; landing brings the
+    -- vanilla check straight back.  Own guard flag so a hot reload from
+    -- an older version still installs it.
+    if not OC.__freeFlyForcedWrapped then
+      OC.__freeFlyForcedWrapped = true
+      local origForced = OC.checkForcedMovement
+      OC.checkForcedMovement = function(self, ...)
+        if self.player and self.player.freeFlying then return false end
+        return origForced(self, ...)
+      end
+    end
+
     OC.__freeFlyCrossGate2 = function(ow, dir, destMapId)
       if not flying() then return false end
       if mod.options:get("gates") and storyGateBlocks(destMapId) then

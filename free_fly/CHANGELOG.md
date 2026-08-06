@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.6
+
+- Flying over the Cycling Road no longer triggers the "You need a
+  BICYCLE" alert or a mid-air force-mount; forced-movement tiles only
+  apply again once you land on them.
+
 ## 0.9.5
 
 - An aerial interception plays the caught species' cry, so a battle
