@@ -2,6 +2,21 @@
 
 ## unreleased
 
+- Voxel camera, per rung: the follow factor keys on each rung's pitch
+  read live from the voxel mod's own angle ladder (which includes FULL
+  and the experimental person modes), and the 75-degree orbit lifts to
+  the rider through the scene's placed-camera seam (the battle-camera
+  mechanism): same centre, pitch and fov, focus raised to flight height.
+  First/third person and battle cameras are never touched.
+- Flat 2D flies steady: camera and sprite both hold constant altitude
+  (the hover bob read as pixel jitter against a fixed camera); the wing
+  flap carries the motion. Voxel keeps its hover.
+- Quick Select: the "You don't have a BICYCLE" tap message is gone for
+  real. Its wrapper arms off the raw press queue after the inner chain
+  runs, so the press edge is now consumed at press time, not release.
+
+## unreleased
+
 - Voxel: constant 52px ride. The scene's building volumes cap at 48px,
   so this clears every small building everywhere with no climbs or
   push-ups at all; fence-hop immunity unchanged. Towers stay

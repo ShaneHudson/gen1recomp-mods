@@ -741,7 +741,14 @@ return function(mod)
         local down = input:isDown("select")
         local was = state.qsHeld
         state.qsHeld = down
-        if down and not was then state.qsArmed = true end
+        if down and not was then
+          state.qsArmed = true
+          -- consume the press edge immediately: quick select arms off the
+          -- raw press queue (not the blinded methods), and an armed state
+          -- with no direction is exactly its "You don't have a BICYCLE"
+          -- path on release
+          consumeQueued(input, { "select" })
+        end
 
         local slotDir
         if state.qsArmed and down then
@@ -1069,7 +1076,6 @@ return function(mod)
       end
       ow.camera:follow(p.px, p.py - camLift,
                        Game.renderer:worldViewSize())
-
       -- the 75-degree orbit, lifted to the rider through the scene's
       -- placed-camera seam (the battle-camera mechanism): same centre,
       -- same pitch, same fov, focus raised to flight height.  Never
@@ -1108,14 +1114,6 @@ return function(mod)
       elseif not state.placeWanted and V3 and state.placedCam
              and V3.camera == state.placedCam then
         V3.camera = nil
-      end
-      -- temporary flight instrumentation: one line per second
-      state.dbgT = (state.dbgT or 0) + dt
-      if state.dbgT >= 1 then
-        state.dbgT = 0
-        mod.log:info("dbg rung=%s camLift=%.0f camY=%.0f py=%.0f alt=%.0f",
-          tostring(Pipelines.level("voxel")), camLift or -1,
-          ow.camera.y or -1, p.py, p.freeFlyAlt or -1)
       end
     end
 
