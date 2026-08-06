@@ -303,6 +303,39 @@ return function(mod)
 
   -- a blackout wakes you at the heal point on solid ground, not mid-air;
   -- the next tick sees the idle phase and clears the player's flags/rider
+  -- first person hides the player's card, and the mount is that card; a
+  -- rider still expects to see their bird, so draw it into the HUD pass:
+  -- bottom-center, back-facing, flapping, like a cockpit view
+  local hudQuads = {}
+  mod.hooks:wrap("render.hud", function(next, game, vp)
+    local out = next(game, vp)
+    if not flying() then return out end
+    pcall(function()
+      local exports = game.mods and game.mods.exports
+      local V = exports and exports.DRAMATIC_SHAPE and exports.DRAMATIC_SHAPE.lib
+      local FP = V and V.require and V.require("FirstPerson")
+      if not (FP and FP.engaged and FP.engaged()) then return end
+      local Player = require("src.world.Player")
+      local mount = Player.__freeFlyMount or Player.__freeFlyBird
+      local img = mount and mount.image
+      if not img then return end
+      local SR = require("src.render.SpriteRenderer")
+      local t = love.timer.getTime()
+      local frame = (math.floor(t * 6) % 2 == 0) and SR.STAND.up or SR.WALK.up
+      local key = tostring(img) .. "#" .. frame
+      if not hudQuads[key] then
+        local iw, ih = img:getDimensions()
+        hudQuads[key] = love.graphics.newQuad(0, frame * 16, 16, 16, iw, ih)
+      end
+      local s = (vp.scale or 4) * 2.2 * (Player.__freeFlyMountScale or 1)
+      local x = vp.gameX + vp.gameWidth / 2 - 8 * s
+      local y = vp.gameY + vp.gameHeight - 10 * s + math.sin(t * 3) * 3
+      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.draw(img, hudQuads[key], x, y, 0, s, s)
+    end)
+    return out
+  end)
+
   -- flight never survives into a loaded save (saving is vetoed mid-air),
   -- so a save swap always grounds the state machine; a stale "flying"
   -- phase could otherwise follow the player into a fresh save

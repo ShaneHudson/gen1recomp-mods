@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+- First-person rider view: while airborne with DRAMATIC_SHAPE's first
+  person engaged, the mount draws bottom-center of the view, back-facing,
+  flapping and bobbing, sized by its dex scale. First person hides the
+  player card (which IS the mount), so this is how the rider sees their
+  bird.
+
 ## 0.10.1
 
 - Safety: loading a save always grounds the flight state machine, so a
