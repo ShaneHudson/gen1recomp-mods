@@ -2,6 +2,13 @@
 
 ## unreleased
 
+- Takeoffs and landings move like the wild flyers'. The mount climbs on
+  a diagonal (a short forward drift, dropped the moment you steer), and
+  a land press while moving swoops in along your heading, skimming the
+  last cell, instead of stopping dead and sinking. Wings flap faster in
+  transitions than on the cruise, and the voxel ride height now ramps
+  in and out with them rather than popping to cruise height. If an NPC
+  wanders onto the spot mid-descent the mount pulls back up.
 - Assisted landing: pressing land over a roof, tower facade or anything
   else unlandable now glides you to the nearest spot you could set down
   on and lands there, instead of bumping. Dry land beats water, doormats

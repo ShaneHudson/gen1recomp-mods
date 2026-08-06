@@ -164,6 +164,8 @@ return function(mod)
       return
     end
     state.phase, state.alt, state.bob = "rising", 0, 0
+    -- wild flyers climb on a diagonal; so does the mount
+    state.riseGlide = 2
     if state.resolveMount then state.resolveMount(mon) end
     -- taking off from a surf dismounts into the air
     ow.player.surfing = nil
@@ -907,6 +909,44 @@ return function(mod)
       return { mapId = map.id, w = w, cells = cells }
     end
 
+    local DIRV = { up = { 0, -1 }, down = { 0, 1 },
+                   left = { -1, 0 }, right = { 1, 0 } }
+
+    local function aheadCell(p)
+      local d = DIRV[p.facing] or DIRV.down
+      return p.cellX + d[1], p.cellY + d[2]
+    end
+
+    local function surfAllowed(ow)
+      return (fieldMoveUser(ow, "SURF") ~= nil or partyKnowsSurf(Game.save))
+        and (not mod.options:get("badges")
+             or (Game.save.inventory and Game.save.inventory.SOULBADGE))
+    end
+
+    -- safe for an auto-glide step to pass over: in bounds, no sealed
+    -- tower facade, no doormat to hover on
+    local function glideOk(ow, cx, cy)
+      local map = ow.map
+      local lm = state.landmark
+      if not map:inBounds(cx, cy) then return false end
+      if lm and lm.mapId == map.id and lm.cells[cy * lm.w + cx] then
+        return false
+      end
+      if map:warpAtCell(cx, cy) then return false end
+      return true
+    end
+
+    local function landableCell(ow, p, cx, cy, allowWater)
+      local map = ow.map
+      if not glideOk(ow, cx, cy)
+         or Collision.occupied(ow.entities, cx, cy, p) then
+        return nil
+      end
+      if map:isWalkableCell(cx, cy) then return "ground" end
+      if allowWater and map:isWaterCell(cx, cy) then return "water" end
+      return nil
+    end
+
     -- Assisted landing: breadth-first from the rider over flyable cells
     -- (anything in bounds that isn't a sealed tower facade) to the
     -- nearest cell you could set down on.  Dry land wins over water,
@@ -922,18 +962,9 @@ return function(mod)
       local function facade(cx, cy)
         return lm and lm.mapId == map.id and lm.cells[cy * lm.w + cx]
       end
-      local allowWater = (fieldMoveUser(ow, "SURF") ~= nil
-                          or partyKnowsSurf(Game.save))
-        and (not mod.options:get("badges")
-             or (Game.save.inventory and Game.save.inventory.SOULBADGE))
+      local allowWater = surfAllowed(ow)
       local function landable(cx, cy)
-        if facade(cx, cy) or map:warpAtCell(cx, cy)
-           or Collision.occupied(ow.entities, cx, cy, p) then
-          return nil
-        end
-        if map:isWalkableCell(cx, cy) then return "ground" end
-        if allowWater and map:isWaterCell(cx, cy) then return "water" end
-        return nil
+        return landableCell(ow, p, cx, cy, allowWater)
       end
       local sx, sy = p.cellX, p.cellY
       local startKey = sy * w + sx
@@ -1002,15 +1033,16 @@ return function(mod)
         p.sprite = mount
       end
       syncRider(ow, p)
+      -- wings work harder in transitions than on the cruise, same as
+      -- the wild flyers' flap profiles
+      p.freeFlyFlapRate = state.phase == "flying" and 8 or 12
       dt = dt or 1 / 60
       local groundOk = ow.map:isWalkableCell(p.cellX, p.cellY)
       -- SURF availability goes through the same engine chain, so
       -- HM-relaxing mods unlock water landings exactly as they unlock
       -- the SURF field move itself
       local waterOk = not groundOk and ow.map:isWaterCell(p.cellX, p.cellY)
-        and (fieldMoveUser(ow, "SURF") ~= nil or partyKnowsSurf(Game.save))
-        and (not mod.options:get("badges")
-             or (Game.save.inventory and Game.save.inventory.SOULBADGE))
+        and surfAllowed(ow)
       local canLand = not p.moving and (groundOk or waterOk)
         and not Collision.occupied(ow.entities, p.cellX, p.cellY, p)
       p.freeFlyCanLand = state.phase == "flying" and canLand or false
@@ -1018,23 +1050,69 @@ return function(mod)
       if state.phase == "rising" then
         local cruise = cruiseAlt()
         state.alt = math.min(cruise, state.alt + RISE_SPEED * dt)
+        -- diagonal climb, like the wild flyers: a short forward drift,
+        -- dropped the moment the player steers or anything's in the way
+        local steering = Game.input:isDown("up") or Game.input:isDown("down")
+          or Game.input:isDown("left") or Game.input:isDown("right")
+        if steering then state.riseGlide = 0 end
+        if (state.riseGlide or 0) > 0 and not p.moving then
+          local cx, cy = aheadCell(p)
+          if glideOk(ow, cx, cy) then
+            local result = p:tryMove(p.facing, ow.map, ow.entities)
+            if result == "moved" then
+              state.riseGlide = state.riseGlide - 1
+            elseif result == "blocked" then
+              state.riseGlide = 0
+            end
+          else
+            state.riseGlide = 0
+          end
+        end
         if state.alt >= cruise then state.phase = "flying" end
       elseif state.phase == "landing" then
-        state.alt = math.max(0, state.alt - RISE_SPEED * dt)
-        if state.alt <= 0 then
-          state.phase = "idle"
-          -- setting down on water hands you straight to a SURF-knower
-          if ow.map:isWaterCell(p.cellX, p.cellY) then
-            p.surfing = true
-            mod.log:info("landed on the water; surfing")
+        -- the last pixel waits for the step to finish, so a swoop skims
+        -- the ground on its final cell instead of dismounting mid-step
+        state.alt = math.max(p.moving and 1 or 0,
+                             state.alt - RISE_SPEED * dt)
+        -- swoop: a land press on the wing keeps the heading for a
+        -- couple of cells on the way down, like the wild flyers' glide
+        -- in to a perch
+        if (state.glide or 0) > 0 and state.alt > 20 and not p.moving then
+          local cx, cy = aheadCell(p)
+          if landableCell(ow, p, cx, cy, surfAllowed(ow)) then
+            local result = p:tryMove(p.facing, ow.map, ow.entities)
+            if result == "moved" then
+              state.glide = state.glide - 1
+            elseif result == "blocked" then
+              state.glide = 0
+            end
           else
-            mod.log:info("landed")
+            state.glide = 0
           end
-          p.freeFlying, p.freeFlyAlt, p.freeFlyCanLand = nil, nil, nil
-          if p.freeFlyWalkSprite then
-            p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
+        end
+        if state.alt <= 0 and not p.moving then
+          local landableHere = (ow.map:isWalkableCell(p.cellX, p.cellY)
+                                or ow.map:isWaterCell(p.cellX, p.cellY))
+            and not Collision.occupied(ow.entities, p.cellX, p.cellY, p)
+          if not landableHere then
+            -- the ground can change under a swoop (an NPC wanders in);
+            -- pull up and hand back rather than landing on them
+            state.phase = "flying"
+          else
+            state.phase = "idle"
+            -- setting down on water hands you straight to a SURF-knower
+            if ow.map:isWaterCell(p.cellX, p.cellY) then
+              p.surfing = true
+              mod.log:info("landed on the water; surfing")
+            else
+              mod.log:info("landed")
+            end
+            p.freeFlying, p.freeFlyAlt, p.freeFlyCanLand = nil, nil, nil
+            if p.freeFlyWalkSprite then
+              p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
+            end
+            return
           end
-          return
         end
       elseif state.phase == "flying" then
         -- an ALTITUDE option change applies mid-flight
@@ -1043,7 +1121,13 @@ return function(mod)
         if Game.input:wasPressed("b") or state.landRequest then
           state.landRequest = nil
           if canLand then
-            state.phase = "landing"
+            state.phase, state.glide = "landing", 0
+          elseif p.moving and p.targetX
+                 and landableCell(ow, p, p.targetX, p.targetY,
+                                  surfAllowed(ow)) then
+            -- pressed on the wing over good ground: swoop in along the
+            -- current heading instead of stopping dead
+            state.phase, state.glide = "landing", 2
           else
             -- assisted landing: glide to the nearest landable cell (in
             -- front of the building you're hovering over) and set down
@@ -1104,6 +1188,7 @@ return function(mod)
             state.approachPath = nil
             -- recheck on arrival: an NPC may have wandered onto the spot
             state.phase = canLand and "landing" or "flying"
+            state.glide = 0
           else
             local dir
             if nextCell[1] > p.cellX then dir = "right"
@@ -1145,7 +1230,14 @@ return function(mod)
         -- The per-cell gh subtraction stays INSTANT, which is what keeps
         -- fences from reading as hops.  Towers are facade-blocked.
         local total = math.max(lift * 0.75, 52)
-        p.freeFlyAlt = total - gh
+        -- takeoff and landing ramp the constant ride in and out, so the
+        -- voxel mount climbs and descends like the wild flyers instead
+        -- of popping to cruise height (mid-flight ALTITUDE lerps are
+        -- exempt or they'd read as a dive)
+        if state.phase == "rising" or state.phase == "landing" then
+          total = total * math.min(1, state.alt / math.max(1, cruiseAlt()))
+        end
+        p.freeFlyAlt = math.max(0, total - gh)
         -- the camera follows the constant TOTAL, never the varying
         -- per-cell part: roofs mix zero-height flat-class cells into
         -- their upper rows, and a camera tracking freeFlyAlt lurched
@@ -1438,7 +1530,8 @@ return function(mod)
         local mount = Player.__freeFlyMount or Player.__freeFlyBird
         if mount then
           sprite = mount
-          phase = math.floor(love.timer.getTime() * 8) % 2
+          phase = math.floor(love.timer.getTime()
+                             * (self.freeFlyFlapRate or 8)) % 2
           flip = false
         end
       end
@@ -1467,7 +1560,8 @@ return function(mod)
                             r, r * 0.4)
       love.graphics.setColor(1, 1, 1, 1)
       local ry = self.py - math.floor(lift + 0.5)
-      local flap = math.floor(love.timer.getTime() * 8) % 2
+      local flap = math.floor(love.timer.getTime()
+                              * (self.freeFlyFlapRate or 8)) % 2
       -- rider FIRST, tucked low, then the mount over it: the mount's body
       -- hides the crop line, so the figure reads as seated behind its
       -- neck instead of a head floating above it
