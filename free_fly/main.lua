@@ -652,6 +652,18 @@ return function(mod)
       end
     end
 
+    -- completed-step reactions (locked-door step scripts, gate guards,
+    -- spinner tiles, poison ticks) belong to walkers; an airborne step
+    -- touches nothing, and landing brings them all straight back
+    if not OC.__freeFlyStepWrapped then
+      OC.__freeFlyStepWrapped = true
+      local origStep = OC.onStepComplete
+      OC.onStepComplete = function(self, ...)
+        if self.player and self.player.freeFlying then return end
+        return origStep(self, ...)
+      end
+    end
+
     OC.__freeFlyCrossGate2 = function(ow, dir, destMapId)
       if not flying() then return false end
       if mod.options:get("gates") and storyGateBlocks(destMapId) then

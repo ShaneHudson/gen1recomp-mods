@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1
+
+- Step triggers no longer fire under an airborne player: locked-door
+  scripts ("The door is locked!"), gate guards, spinner tiles and poison
+  step ticks all wait until you land.
+
 ## 0.11.0
 
 - First-person rider view: while airborne with DRAMATIC_SHAPE's first
