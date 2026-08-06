@@ -913,6 +913,10 @@ return function(mod)
         if p.freeFlyWalkSprite then
           p.sprite, p.freeFlyWalkSprite = p.freeFlyWalkSprite, nil
         end
+        if state.placedCam and state.v3dRef
+           and state.v3dRef.camera == state.placedCam then
+          state.v3dRef.camera = nil
+        end
         dropRider(ow)
         return
       end
@@ -1031,13 +1035,12 @@ return function(mod)
         -- their upper rows, and a camera tracking freeFlyAlt lurched
         -- there while the card itself stayed level.  The follow factor
         -- scales with the rung's PITCH, read live from the voxel mod's
-        -- own angle table (the ladder is OFF/FULL/15/35/50/75/1ST/3RD,
-        -- so indexing by rung was wrong: "75" is rung 5).  At 75 degrees
-        -- the camera deliberately OVERSHOOTS the rider's height: aiming
-        -- past the card drops the rider to centre frame and pushes the
-        -- foreground buildings away.
+        -- own angle table (the ladder is OFF/FULL/15/35/50/75/1ST/3RD).
+        -- The engine camera is a GROUND-PLANE point, so it can express
+        -- forward but never height; the 75-degree orbit gets its height
+        -- through the scene's placed-camera seam below instead.
         local FOLLOW_BY_DEG = { [15] = 0.65, [35] = 0.65,
-                                [50] = 0.78, [75] = 2.0 }
+                                [50] = 0.78, [75] = 0.65 }
         local rung = Pipelines.level("voxel") or 0
         if state.voxelStateRef == nil then
           state.voxelStateRef = false
@@ -1052,12 +1055,58 @@ return function(mod)
         local deg = state.voxelStateRef
           and state.voxelStateRef.ANGLES_DEG[rung + 1] or 0
         camLift = total * (FOLLOW_BY_DEG[deg] or 0.65)
+        state.placeWanted = deg == 75
+          and not (state.voxelStateRef.isFirstPerson
+                   and state.voxelStateRef.isFirstPerson(rung))
+          and not (state.voxelStateRef.isThirdPerson
+                   and state.voxelStateRef.isThirdPerson(rung))
+        state.placeHeight = (p.freeFlyAlt or 0) + gh
       else
         p.freeFlyAlt = lift
         camLift = lift
       end
       ow.camera:follow(p.px, p.py - camLift,
                        Game.renderer:worldViewSize())
+
+      -- the 75-degree orbit, lifted to the rider through the scene's
+      -- placed-camera seam (the battle-camera mechanism): same centre,
+      -- same pitch, same fov, focus raised to flight height.  Never
+      -- touches a camera someone else placed (battles, first person).
+      local vsRef = state.voxelStateRef
+      if state.v3dRef == nil then
+        state.v3dRef = false
+        local exports = Game.mods and Game.mods.exports
+        local V = exports and exports.DRAMATIC_SHAPE
+          and exports.DRAMATIC_SHAPE.lib
+        local okV3, v3 = pcall(function()
+          return V and V.require("Voxel3D")
+        end)
+        if okV3 and v3 then state.v3dRef = v3 end
+      end
+      local V3 = state.v3dRef
+      if state.placeWanted and vsRef and V3
+         and (V3.camera == nil or V3.camera == state.placedCam) then
+        local ok = pcall(function()
+          local vw, vh = Game.renderer:worldViewSize()
+          local ccx = ow.camera.x + vw / 2
+          local ccy = ow.camera.y + vh / 2
+          local a = vsRef.angle or math.rad(75)
+          local focal = vsRef.FOCAL or 1.2
+          local distC = focal * vh
+          local L = state.placeHeight or 0
+          local cam = state.placedCam or {}
+          cam.fov = 2 * math.atan(1 / (2 * focal))
+          cam.focus = { ccx, L, ccy }
+          cam.eye = { ccx, L + distC * math.cos(a), ccy + distC * math.sin(a) }
+          cam.up = { 0, math.sin(a), -math.cos(a) }
+          state.placedCam = cam
+          V3.camera = cam
+        end)
+        if not ok then state.placeWanted = false end
+      elseif not state.placeWanted and V3 and state.placedCam
+             and V3.camera == state.placedCam then
+        V3.camera = nil
+      end
       -- temporary flight instrumentation: one line per second
       state.dbgT = (state.dbgT or 0) + dt
       if state.dbgT >= 1 then
