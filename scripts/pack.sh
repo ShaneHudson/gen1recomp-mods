@@ -20,5 +20,3 @@ for mod in free_fly wild_skies; do
     -o "$ROOT/dist/$mod-$version.zip"
   echo "packed dist/$mod-$version.zip"
 done
-
-(cd "$ROOT/dist" && shasum -a 256 ./*.zip > sha256sums.txt && cat sha256sums.txt)

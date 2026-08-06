@@ -151,7 +151,7 @@ jobs:
             unzip -l "$zip_path" | head -5
           done
 
-          (cd "$out" && sha256sum ./*.zip > sha256sums.txt && cat sha256sums.txt)
+
 
       - name: Publish GitHub Release
         env:
@@ -173,5 +173,5 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$VERSION" \
             --notes "$notes" \
-            dist/*.zip dist/sha256sums.txt
+            dist/*.zip
           echo "Published $TAG"
