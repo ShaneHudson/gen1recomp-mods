@@ -274,6 +274,34 @@ return function(mod)
     return ok and h or nil
   end
 
+  -- an occupied roost pulls newcomers in: a bird already sat on a roof
+  -- offers the free roof cells beside it to whoever lands next
+  local function roofNeighborCell(ow, map)
+    for _, f in ipairs(flyers) do
+      if not f.dead and f.mode == "ground" and (f.perchAlt or 0) > 0 then
+        for _ = 1, 8 do
+          local x = f.cellX + love.math.random(-2, 2)
+          local y = f.cellY + love.math.random(-2, 2)
+          if (x ~= f.cellX or y ~= f.cellY) and map:inBounds(x, y) then
+            local h = roofHeightAt(map, x, y)
+            if h then
+              local taken = false
+              for _, o in ipairs(flyers) do
+                if not o.dead and o.mode == "ground"
+                   and o.cellX == x and o.cellY == y then
+                  taken = true
+                  break
+                end
+              end
+              if not taken then return x, y, h end
+            end
+          end
+        end
+      end
+    end
+    return nil
+  end
+
   -- somewhere a bird can sit, inside the camera view but away from the
   -- player: a walkable, unoccupied street cell, or a flat rooftop.
   -- Returns cell x, cell y, perch height in px (0 on the street).
@@ -291,6 +319,11 @@ return function(mod)
       local FieldDefaults = require("src.world.FieldDefaults")
       wantRoof = map.def ~= nil and MapDef.isOutside(map.def,
         FieldDefaults.field(game.data, "outsideTilesets")) == true
+    end
+    -- joining an existing roost beats founding a new one
+    if wantRoof then
+      local jx, jy, jh = roofNeighborCell(ow, map)
+      if jx then return jx, jy, jh end
     end
     -- a roof seeker holds out for a roof through the whole scan and only
     -- settles for the first street cell it saw when none turned up
@@ -366,9 +399,11 @@ return function(mod)
         -- perched from the start, on a street cell or a rooftop;
         -- flushes when approached or when its rest runs out
         self.mode = "ground"
-        self.groundT = love.math.random(6, 14)
         self.px, self.py = perchX * 16, perchY * 16
         self.perchAlt = perchAlt or 0
+        -- safe up on a roof, a bird lingers; street rests stay short
+        self.groundT = self.perchAlt > 0 and love.math.random(14, 30)
+          or love.math.random(6, 14)
         self.alt = self.perchAlt
         self.heading = love.math.random() < 0.5 and 0 or math.pi
       else
@@ -483,8 +518,10 @@ return function(mod)
 
     if self.mode == "ground" then
       self.groundT = self.groundT - dt
-      local near = p and (math.abs(p.cellX - self.cellX)
-                        + math.abs(p.cellY - self.cellY)) <= FLUSH_CELLS
+      -- a rooftop percher is out of reach of anyone on foot: only an
+      -- airborne player scares it off; walkers just pass underneath
+      local reachable = (self.perchAlt or 0) <= 0 or playerAirborne(p)
+      local near = nearPlayer and reachable
       if near or self.groundT <= 0 then
         self.mode = "rise"
         if near and p then
@@ -497,8 +534,10 @@ return function(mod)
       self.alt = math.min(self.altTarget, self.alt + CLIMB * dt)
       self:step(dt, 0.5)
       if self.alt >= self.altTarget then self.mode = "roam" end
-    elseif self.mode == "toLand" and timid and nearPlayer then
-      -- landing beside someone it wants no part of: abort and climb
+    elseif self.mode == "toLand" and timid and nearPlayer
+           and ((self.perchAlt or 0) <= 0 or playerAirborne(p)) then
+      -- landing beside someone it wants no part of: abort and climb.
+      -- A rooftop target stays fine: the walker below cannot reach it.
       self.mode = "roam"
       self.startleT = 1.6
       self.altTarget = self.band[2]
@@ -519,7 +558,8 @@ return function(mod)
         if self.alt <= (self.perchAlt or 0) then
           self.alt = self.perchAlt or 0
           self.mode = "ground"
-          self.groundT = love.math.random(4, 10)
+          self.groundT = (self.perchAlt or 0) > 0
+            and love.math.random(12, 26) or love.math.random(4, 10)
         end
       end
     elseif self.mode == "leave" then

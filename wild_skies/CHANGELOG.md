@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Walking under a rooftop bird no longer scares it off; it only moves
+  along when its rest runs out, or when an airborne player gets close.
+  The same goes for a bird gliding in to land on a roof above you.
+  Roof rests also run two to three times longer than street rests, so
+  rooftop birds properly settle in instead of touching down and
+  leaving again.
+- Roosting: when a bird is already sat on a roof, the next bird
+  looking for a roof joins it on a free cell of the same rooftop
+  rather than founding its own, so rooftop groups build up naturally.
+  Arrivals never disturb the sitter.
+
 ## 1.4.0
 
 - Birds now wander instead of flying in a straight line. They follow
