@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Ready for expanded dexes. Species that other mods add to encounter
+  slots already fly on their maps; the new
+  `registerSkySpecies(species, opts)` export also lets a species mod
+  join the slot-less ambient skies (day, sea or night pools, with a
+  weight, an optional night-only rule and a level band). The built-in
+  gen 1 pool entries are checked against the loaded data first, so a
+  changed dex never spawns a bird the game no longer knows.
+
 ## 1.4.0
 
 - Birds now wander instead of flying in a straight line. They follow
@@ -14,10 +24,11 @@
   scenery and fly away if you get close. After any battle started by
   this mod there is also a 25 second break before the next one can
   happen.
-- Birds can rest on building roofs as well as on the ground (roof
-  spots need the Dramatic Shape Voxel Mod installed for its roof data,
-  though it works in the flat 2D game too). Birds on roofs never start
-  battles.
+- Birds can rest on building roofs as well as on the ground. Roof
+  perching needs the Dramatic Shape Voxel Mod installed, because its
+  map data is what tells us which tiles are roofs; you don't have to
+  use its 3D view, it works while playing flat 2D. Without that mod,
+  birds rest on the ground only. Birds on roofs never start battles.
 - Towns and cities get birds too, Cinnabar Island and the Indigo
   Plateau included. Town birds mostly sit on roofs, never battle, and
   their levels grow with your badge count: around level 3 to 8 with no
