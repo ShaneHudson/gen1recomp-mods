@@ -36,9 +36,10 @@ tested versions are in each mod's README.
 
 ## Install
 
-1. Download the zip you want (`free_fly-<version>.zip` or
-   `wild_skies-<version>.zip`) from the
-   [releases page](https://github.com/ShaneHudson/gen1recomp-mods/releases).
+1. Download the zip you want from the mod's release mirror:
+   [free_fly](https://github.com/shanehudson-gen1recomp-mods/free_fly/releases)
+   or [wild_skies](https://github.com/shanehudson-gen1recomp-mods/wild_skies/releases).
+   Every mirror's README lists all the others.
 2. In the game, open MODS from the pause menu (or press F10) and pick
    Import mod .zip.
 3. Enable the mod in the same menu.

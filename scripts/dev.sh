@@ -9,7 +9,9 @@ TARGET="${GEN1RECOMP_MODS_DIR:-$HOME/Development/Projects/pokemon/gen1recomp/mod
 
 mkdir -p "$TARGET"
 
-for mod in free_fly wild_skies; do
+for m in "$ROOT"/*/manifest.json; do
+  [ -f "$m" ] || continue
+  mod="$(basename "$(dirname "$m")")"
   mkdir -p "$ROOT/$mod/lib/shared"
   rsync -a --delete --exclude 'README*' "$ROOT/shared/" "$ROOT/$mod/lib/shared/"
   rsync -a --delete --exclude '.git' "$ROOT/$mod/" "$TARGET/$mod/"

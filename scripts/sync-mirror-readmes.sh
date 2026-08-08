@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Regenerate the README on every per-mod mirror repo
+# (shanehudson-gen1recomp-mods/<id>). Each README links back to the
+# monorepo and lists every other mirror, so finding one mod surfaces the
+# rest. Runs from release.sh; safe to run by hand after adding a mod.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ORG="shanehudson-gen1recomp-mods"
+
+mods=()
+for m in "$ROOT"/*/manifest.json; do
+  [ -f "$m" ] || continue
+  mods+=("$(basename "$(dirname "$m")")")
+done
+[ ${#mods[@]} -gt 0 ] || { echo "no mods found"; exit 1; }
+
+name_of() {
+  python3 -c "import json;print(json.load(open('$ROOT/$1/manifest.json')).get('name','$1'))"
+}
+
+for mod in "${mods[@]}"; do
+  listing=""
+  for other in "${mods[@]}"; do
+    if [ "$other" = "$mod" ]; then
+      listing+="- **$(name_of "$other")** (\`$other\`, this repo)"$'\n'
+    else
+      listing+="- [$(name_of "$other")](https://github.com/$ORG/$other) (\`$other\`)"$'\n'
+    fi
+  done
+
+  readme="# $mod (release mirror)
+
+Installable releases of the **$(name_of "$mod")** mod for [gen1recomp](https://github.com/bryanthaboi/gen1recomp).
+
+Grab the newest \`.zip\` from [Releases](https://github.com/$ORG/$mod/releases) and install it in-game: **MODS > Import mod .zip**. Installed copies get update checks through the launcher automatically.
+
+Source code and issues live in the [mods monorepo](https://github.com/$ORG/gen1recomp-mods); this repo only hosts releases.
+
+## All mods in this family
+
+$listing"
+
+  current="$(gh api "repos/$ORG/$mod/contents/README.md" --jq .content 2>/dev/null \
+    | python3 -c "import sys,base64;sys.stdout.write(base64.b64decode(sys.stdin.read()).decode())" \
+    2>/dev/null || true)"
+  if [ "$current" = "$readme" ]; then
+    echo "$mod README up to date"
+    continue
+  fi
+
+  sha="$(gh api "repos/$ORG/$mod/contents/README.md" --jq .sha 2>/dev/null || true)"
+  args=(-f message="Sync mirror README" -f content="$(printf '%s' "$readme" | base64)")
+  [ -n "$sha" ] && args+=(-f sha="$sha")
+  gh api --method PUT "repos/$ORG/$mod/contents/README.md" "${args[@]}" --jq .commit.sha >/dev/null
+  echo "$mod README updated"
+done

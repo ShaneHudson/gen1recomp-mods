@@ -1,13 +1,17 @@
 # Development
 
-The repo holds both mods with one shared version number. `shared/` is
-copied into each mod as `lib/shared/` by the scripts, so packed zips are
-self-contained; edit shared code only in `shared/`.
+The repo holds every mod, each with its own version in its
+`manifest.json`. Any top-level directory with a `manifest.json` is a mod;
+the scripts and the release workflow discover them, so adding a mod needs
+no list edits anywhere. `shared/` is copied into each mod as
+`lib/shared/` by the scripts, so packed zips are self-contained; edit
+shared code only in `shared/`.
 
 ```sh
-scripts/dev.sh    # install both mods into the gen1recomp checkout's mods/
-scripts/test.sh   # dev.sh + run each headless suite on the installed copies
-scripts/pack.sh   # validate + pack each mod into dist/<id>-<version>.zip
+scripts/dev.sh       # install the mods into the gen1recomp checkout's mods/
+scripts/test.sh      # dev.sh + run each headless suite on the installed copies
+scripts/pack.sh      # validate + pack each mod into dist/<id>-<version>.zip
+scripts/release.sh   # pack + publish new versions to the release mirrors
 ```
 
 `dev.sh` targets the gen1recomp checkout's `mods/` folder (default
@@ -32,8 +36,23 @@ MOD_DIR=mods/free_fly luajit mods/free_fly/tests/free_fly_load_test.lua
 
 ## Releases
 
-Push to `main` (or run the workflow manually) and CI packs every mod and
-publishes one release. The version is the highest manifest version (or a
-`[release X.Y.Z]` commit-message override), and each asset is named
-`<id>-<version>.zip`, which is how the game's updater picks the right
-download per installed mod. Markdown-only pushes don't trigger releases.
+Each mod releases on its own mirror repo
+(`shanehudson-gen1recomp-mods/<id>`), the repo its manifest's `github`
+field points at. That gives every mod its own version stream, updater
+cache entry, and download stats; the game's updater assumes exactly one
+mod per repo, which is why the monorepo itself never hosts releases.
+
+Releases are manual only. Bump the mod's `manifest.json` version, test,
+then either run `scripts/release.sh [mod ...]` locally or trigger the
+Release workflow from the Actions tab. Both skip any mod whose manifest
+version is already on its mirror, so releasing everything is safe. Each
+publish tags the monorepo `<id>-v<version>` (for changelog ranges) and
+re-syncs every mirror's README, which lists all the other mirrors.
+
+The workflow needs the `MIRROR_RELEASE_TOKEN` secret: a fine-grained PAT
+with Contents read/write on the org's repos. `scripts/release.sh` run
+locally just uses your `gh` login and needs no setup.
+
+Adding a mod: create `<id>/` with its `manifest.json` pointing `github`
+at `shanehudson-gen1recomp-mods/<id>`, create that (public) repo, and
+release. The README sync fills in the cross-links.

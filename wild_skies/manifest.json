@@ -14,5 +14,5 @@
   ],
   "game_version": "0.0.0-dev || >=0.1.0 <2.0.0",
   "description": "Ambient flying Pokémon from the local encounter table roam the sky in loose flocks, resting on streets and rooftops.",
-  "github": "ShaneHudson/gen1recomp-mods"
+  "github": "shanehudson-gen1recomp-mods/wild_skies"
 }
