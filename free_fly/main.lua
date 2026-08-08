@@ -170,12 +170,16 @@ return function(mod)
     return nil
   end
 
-  -- a mon qualifies when its species can learn HM02 (the MERGED tmhm, so
-  -- compatibility-expanding mods count) and it either knows FLY or a mod
-  -- has relaxed the field-move rules through the engine's own chain
+  -- a mon qualifies when it IS the gift (the marker outlives whatever a
+  -- randomizer does to its moves or its species' data), when it knows
+  -- FLY (knowing the move is vanilla's own bar for field use; the
+  -- species compat list can lie under randomizers), or when a mod has
+  -- relaxed the field-move rules through the engine's own chain, where
+  -- HM02 compatibility still gates as the machine-teach path would
   local function eligibleFlyer(game, ow, mon)
-    if not canLearnFly(game, mon) then return false end
+    if mon and mon.freeFlyGift then return true end
     if knowsFly(mon) then return true end
+    if not canLearnFly(game, mon) then return false end
     local Runtime = require("src.mods.Runtime")
     return Runtime.wantsHook("fieldmove.eligibility")
       and fieldMoveUser(ow, "FLY") ~= nil
@@ -292,9 +296,10 @@ return function(mod)
   mod.content.commands:register("free_fly:teach_fly", {
     foreground = true,
     fn = function(ctx)
-      local function teach(mon)
+      local function teach(mon, anySpecies)
         if not mon then return false end
-        if mon.species ~= GIFT_SPECIES and mon.species ~= "PIDGEY" then
+        if not anySpecies
+           and mon.species ~= GIFT_SPECIES and mon.species ~= "PIDGEY" then
           return false
         end
         -- marks the gift so the BADGE CHECKS option exempts its flights;
@@ -320,6 +325,15 @@ return function(mod)
         for _, mon in ipairs(box) do
           if teach(mon) then return end
         end
+      end
+      -- no bird by name: a randomizer swapped the gift's species.  This
+      -- command only runs right after give_pokemon, so the newest party
+      -- member IS the gift; it gets FLY and the marker all the same
+      local newest = ctx.save.party[#ctx.save.party]
+      if teach(newest, true) then
+        mod.log:info("gift became %s; taught FLY anyway",
+                     tostring(newest.species))
+        return
       end
       mod.log:warn("gift %s not found; FLY not taught", GIFT_SPECIES)
     end,
@@ -1893,15 +1907,28 @@ return function(mod)
           if mon.freeFlyGift then return end
         end
       end
+      -- prefer a FLY knower; failing that take the first of the line
+      -- anyway (a randomizer may have stripped the move), since the
+      -- taken flag proves the gift was collected
+      local fallback
       for _, list in ipairs(lists) do
         for _, mon in ipairs(list or {}) do
-          if (mon.species == "PIDGEY" or mon.species == "PIDGEOTTO"
-              or mon.species == GIFT_SPECIES) and knowsFly(mon) then
-            mon.freeFlyGift = true
-            mod.log:info("marked the gift %s from an older save", mon.species)
-            return
+          if mon.species == "PIDGEY" or mon.species == "PIDGEOTTO"
+             or mon.species == GIFT_SPECIES then
+            if knowsFly(mon) then
+              mon.freeFlyGift = true
+              mod.log:info("marked the gift %s from an older save",
+                           mon.species)
+              return
+            end
+            fallback = fallback or mon
           end
         end
+      end
+      if fallback then
+        fallback.freeFlyGift = true
+        mod.log:info("marked the gift %s from an older save (FLY missing)",
+                     fallback.species)
       end
     end
     migrateGiftMarker()
