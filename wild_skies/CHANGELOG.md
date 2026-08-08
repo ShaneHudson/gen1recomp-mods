@@ -1,15 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Ready for expanded dexes. Species that other mods add to encounter
-  slots already fly on their maps; the new
-  `registerSkySpecies(species, opts)` export also lets a species mod
-  join the slot-less ambient skies (day, sea or night pools, with a
-  weight, an optional night-only rule and a level band). The built-in
-  gen 1 pool entries are checked against the loaded data first, so a
-  changed dex never spawns a bird the game no longer knows.
-
 ## 1.4.0
 
 - Birds now wander instead of flying in a straight line. They follow

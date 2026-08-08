@@ -100,29 +100,6 @@ consulted, so a scenario mod can crowd the sky if it wants to. Returns
 the flyer id, or nil plus a reason ("no overworld" when there's no map
 loaded, or the species has no usable sprite and no clear entry point).
 
-### Adding species to the sky
-
-Species a mod adds to a map's encounter slots appear in that map's sky
-automatically (the slot filter reads the merged data, FLYING type and
-all). For the slot-less ambient skies (land, sea, towns and the night),
-register your species directly:
-
-```lua
-local ws = mod.find("wild_skies")
-if ws then
-  ws.exports.registerSkySpecies("NOCTOWL", {
-    pool = "night",        -- "day" (default), "sea" or "night"
-    weight = 2,            -- 1 to 4 entries in the roll
-    nightOnly = true,      -- keeps it out of the daylight everywhere
-    levels = { 12, 30 },   -- clamp on its ambient level rolls
-  })
-end
-```
-
-Ambient defaults that a total conversion removed from the data are
-skipped automatically, so the built-in gen 1 cast never breaks a
-changed dex.
-
 ### Events
 
 `mod.wild_skies.flyer_bumped` fires when a low bird collides with the

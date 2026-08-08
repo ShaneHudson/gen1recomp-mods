@@ -19,17 +19,6 @@ local id, why = api.spawnFlyer("PIDGEY", 5)
 T.eq(id, nil, "spawnFlyer refuses with no overworld")
 T.eq(why, "no overworld", "and says why")
 
--- species mods can join the ambient sky
-T.eq(select(1, api.registerSkySpecies(nil)), false,
-  "sky species needs an id")
-T.eq(select(1, api.registerSkySpecies("")), false,
-  "empty species id rejected")
-T.eq(api.registerSkySpecies("NOCTOWL",
-  { pool = "night", nightOnly = true, weight = 2, levels = { 12, 30 } }),
-  true, "night species registers")
-T.eq(api.registerSkySpecies("WINGULL", { pool = "sea" }), true,
-  "sea species registers")
-
 T.eq(select(1, api.registerSpriteSource({})), false,
   "invalid source rejected via export")
 T.eq(api.registerSpriteSource({ id = "t", resolve = function() end }), true,

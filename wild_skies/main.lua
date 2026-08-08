@@ -149,29 +149,6 @@ return function(mod)
   mod.exports.registerSpriteSource = Sky.registerSpriteSource
   mod.exports.unregisterSpriteSource = Sky.unregisterSpriteSource
 
-  -- species mods can put their own Pokemon in the ambient sky (species
-  -- added to encounter slots appear automatically; this is for the
-  -- slot-less skies: land, sea and night pools).  Weight repeats the
-  -- entry in the roll, nightOnly keeps a species out of the daylight
-  -- everywhere, levels clamps its ambient level band.
-  mod.exports.registerSkySpecies = function(species, opts)
-    if type(species) ~= "string" or species == "" then
-      return false, "species id required"
-    end
-    opts = opts or {}
-    local pool = opts.pool == "night" and AMBIENT_NITE
-      or opts.pool == "sea" and AMBIENT_SEA
-      or AMBIENT_DAY
-    local weight = math.max(1, math.min(4, math.floor(opts.weight or 1)))
-    for _ = 1, weight do pool[#pool + 1] = species end
-    if opts.nightOnly then NIGHT_ONLY[species] = true end
-    if type(opts.levels) == "table" and opts.levels[1] and opts.levels[2] then
-      AMBIENT_LEVELS[species] = { opts.levels[1], opts.levels[2] }
-    end
-    picksCache.key = nil -- rebuild the sky with the new cast
-    return true
-  end
-
   -- consume the flyer: despawns it and hands back its identity, or nil.
   -- Whoever takes it, the mod.wild_skies.flyer_taken event tells every
   -- observer, so trackers need not know each consumer.
@@ -843,11 +820,7 @@ return function(mod)
           local pool = tod == "NITE" and AMBIENT_NITE
             or sea and AMBIENT_SEA or AMBIENT_DAY
           for _, species in ipairs(pool) do
-            -- a total conversion may not know our gen 1 defaults; only
-            -- species the merged data actually carries may fly
-            if Game.data.pokemon and Game.data.pokemon[species] then
-              picksCache.picks[#picksCache.picks + 1] = { species = species }
-            end
+            picksCache.picks[#picksCache.picks + 1] = { species = species }
           end
           -- the map's own slot levels, so ambient birds match the local
           -- level curve rather than a flat roll
