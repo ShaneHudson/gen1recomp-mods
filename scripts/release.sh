@@ -51,7 +51,9 @@ Source: https://github.com/$ORG/gen1recomp-mods (development happens in the mono
   fi
 
   if ! git -C "$ROOT" rev-parse -q --verify "refs/tags/$monotag" >/dev/null; then
-    git -C "$ROOT" tag "$monotag"
+    # -m keeps this working under tag.gpgsign=true, which turns every
+    # tag into an annotated one and refuses a bare `git tag`.
+    git -C "$ROOT" tag -m "$mod $version" "$monotag"
     git -C "$ROOT" push origin "$monotag"
   fi
 

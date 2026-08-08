@@ -29,7 +29,7 @@ for mod in "${mods[@]}"; do
     fi
   done
 
-  readme="# $mod (release mirror)
+  readme="# $mod (Official mirror)
 
 Installable releases of the **$(name_of "$mod")** mod for [gen1recomp](https://github.com/bryanthaboi/gen1recomp).
 
