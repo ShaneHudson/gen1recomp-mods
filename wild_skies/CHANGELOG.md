@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.1
 
 - Walking under a rooftop bird no longer scares it off; it only moves
   along when its rest runs out, or when an airborne player gets close.
