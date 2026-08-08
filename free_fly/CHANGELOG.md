@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0
+
+- FREEFLY no longer vanishes from the party menu when another mod (a
+  randomizer, say) changes your Pokemon's data. The gift bird always
+  shows the option, any Pokemon that knows FLY always shows it, and if
+  a randomizer swaps the gift for a different species, that Pokemon
+  still gets FLY and the badge exemption. Older saves whose gift lost
+  FLY get their badge exemption back on load.
+
 ## 1.3.1
 
 - For mod authors (see INTEGRATION.md in the repository): flight state
