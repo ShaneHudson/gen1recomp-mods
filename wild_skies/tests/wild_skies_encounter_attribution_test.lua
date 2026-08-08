@@ -98,6 +98,31 @@ T.eq(#ow.entities, 1, "one bird consumed")
 T.check(ow.entities[1] == crosser, "the flying one is still up there")
 T.check(percher.dead, "the perched one went into the battle")
 crosser.dead = true
+table.remove(ow.entities, 1) -- retire the dead crosser from the fake world
+
+-- takeFlyer broadcasts the consumption to every listener
+local heard
+run.loader.events:on("mod.wild_skies.flyer_taken", function(ev) heard = ev end)
+local target = spawnAt("PIDGEY", 6, 16, 16, "cross")
+target.t = 1     -- past the newborn grace the collision seam enforces
+target.bold = true -- shy birds are scenery and invisible to takeFlyer
+local got = api.takeFlyer(16, 16, 1)
+T.eq(got and got.species, "PIDGEY", "takeFlyer hands back the identity")
+T.check(heard ~= nil, "flyer_taken event heard")
+T.eq(heard and heard.species, "PIDGEY", "event carries the species")
+T.eq(heard and heard.level, 6, "event carries the level")
+T.eq(heard and heard.cellX, 16, "event carries the cell")
+
+-- a shy bird is invisible to the battle seams but real to attribution
+local shy = spawnAt("PIDGEY", 4, 16, 16, "cross")
+shy.t = 1
+shy.bold = false
+T.eq(api.takeFlyer(16, 16, 1), nil, "a shy bird cannot be taken")
+T.eq(api.flyerAt(16, 16, 1), nil, "nor read by the collision seam")
+shy.cellX, shy.cellY = 15, 16
+local shyRoll = roll("PIDGEY", 3)
+T.eq(shyRoll.level, 4, "but a classic roll still becomes it")
+T.eq(#ow.entities, 0, "and it despawns into that battle")
 
 run.release()
 T.finish("wild_skies_encounter_attribution")

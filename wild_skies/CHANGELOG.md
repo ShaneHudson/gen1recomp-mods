@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.4.0
+
+- Birds now wander instead of flying in a straight line. They follow
+  curving paths, change height as they go, and fly at the same sort of
+  heights the free_fly mount uses, with the odd low swoop. Birds of
+  the same species drift into loose flocks, and some arrive as a small
+  group. After fifteen to thirty seconds a bird leaves over the
+  nearest map edge.
+- Lots more birds: the LOW / MED / HIGH caps are now 3 / 6 / 10, with
+  faster respawns. To stop that turning into constant fights, only
+  about a third of birds will actually battle you; the rest are
+  scenery and fly away if you get close. After any battle started by
+  this mod there is also a 25 second break before the next one can
+  happen.
+- Birds can rest on building roofs as well as on the ground (roof
+  spots need the Dramatic Shape Voxel Mod installed for its roof data,
+  though it works in the flat 2D game too). Birds on roofs never start
+  battles.
+- Towns and cities get birds too, Cinnabar Island and the Indigo
+  Plateau included. Town birds mostly sit on roofs, never battle, and
+  their levels grow with your badge count: around level 3 to 8 with no
+  badges, up to the forties with all eight. The same badge rule covers
+  any other map with no encounter data to read levels from.
+- Better species and level picks: sea routes get Pidgeotto, Pidgeot
+  and Fearow instead of a sky full of Pidgey, ambient bird levels come
+  from the map's own encounter slots, and caves count as night at all
+  hours, so the Zubat line always flies in Mt Moon and Rock Tunnel.
+- New BIRD SIZE option (SMALL / NORMAL / LARGE / HUGE). The default is
+  NORMAL, which looks the same as before. Cave birds stay capped at a
+  sensible size on every setting; without that cap Cerulean Cave's
+  Golbat and Dodrio drew far too big for the corridors.
+- Birds face up and down now, not just left and right.
+- For mod authors: the `mod.wild_skies.flyer_taken` event fires
+  whenever `takeFlyer` removes a bird, whichever mod called it.
+
 ## 1.3.1
 
 - If a normal grass battle rolls a species while that same species is

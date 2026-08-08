@@ -77,11 +77,19 @@ alone, and you react to the takeoff and landed events yourself.
 `exports.flyerAt(cellX, cellY, radius)` returns `{ species, level }`
 for the nearest live flyer within the radius, or nil. Newborn flyers
 are invisible to this for their first moments, so nothing can collide
-with a bird the player hasn't had a chance to see.
+with a bird the player hasn't had a chance to see. Since the sky got
+busy, only bold birds (roughly a third of ambient spawns) answer here
+at all; the rest are scenery and scatter instead of battling. Birds
+spawned through `spawnFlyer` are always bold.
 
 `exports.takeFlyer(cellX, cellY, radius)` does the same lookup but also
 despawns the flyer and hands you its identity. This is how free_fly
 turns a mid-air interception into that exact bird's battle.
+
+Both calls also go quiet for about twenty five seconds after any battle
+born from this sky (a ground bump, or any consumer taking a bird), so
+heavy spawns decorate the route instead of chaining fights. Expect nil
+during that rest and just try again later.
 
 ### Spawning flyers
 
@@ -97,6 +105,11 @@ loaded, or the species has no usable sprite and no clear entry point).
 `mod.wild_skies.flyer_bumped` fires when a low bird collides with the
 walking player and starts its battle. Payload:
 `{ species, level, cellX, cellY }`.
+
+`mod.wild_skies.flyer_taken` fires whenever `takeFlyer` consumes a
+flyer, whoever the caller was, with the same payload shape. Listen to
+this rather than to each consumer's own events if you want to track
+every bird that leaves the sky through the API.
 
 ## Sprite sources: offering in-air art
 

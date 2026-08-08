@@ -1,18 +1,26 @@
 # Wild Skies
 
 Adds flying Pokémon to the overworld. Species come from each map's own
-encounter table, so Pidgey and Spearow cross the early routes and the
-Zubat line comes out at night. They cast shadows, flap their wings, and
-are sized by their Pokédex height. Sea routes get a few birds too, even
-though their encounter slots have no flyers.
+encounter table, so Pidgey and Spearow cross the early routes, the
+Zubat line comes out at night and fills the caves at any hour, the
+open sea belongs to Pidgeotto, Pidgeot and Fearow, and towns and
+cities get rooftop birds that never pick a fight. They cast shadows,
+flap their wings, and are sized by their Pokédex height.
 
-Flyers vary their behaviour: most cross the screen and leave, some land
-on the grass for a few seconds before moving on, and some start perched
-on the ground and fly off when you get close. If you reach a low one
-before it gets away, a normal wild battle starts with that species and
-level. High flyers never trigger battles from the ground. If you also
-have [free_fly](../free_fly) installed, flying into one starts its
-battle mid-air.
+Birds roam rather than commute: they wander the sky on lazy curving
+paths, drift between heights in the same band the free_fly mount uses,
+and sometimes arrive as a loose flock of the same species that wheels
+together. They rest on the grass, and with the Dramatic Shape Voxel Mod
+installed also on building roofs, then fly off when you get close or
+when their visit is over.
+
+The sky is busy, so most birds are scenery: only the bold ones (about a
+third) will meet you head on. If you reach a bold low one before it
+gets away, a normal wild battle starts with that species and level, and
+the flock then keeps its distance for a while so fights never chain.
+High flyers never trigger battles from the ground. If you also have
+[free_fly](../free_fly) installed, flying into one starts its battle
+mid-air, under the same rules.
 
 ![Demo](https://raw.githubusercontent.com/ShaneHudson/gen1recomp-mods/main/.github/wild_skies-demo.gif)
 
@@ -21,6 +29,7 @@ battle mid-air.
 | Option | Default | What it does |
 |---|---|---|
 | SKY DENSITY | MED | LOW / MED / HIGH flyer caps and spawn cooldowns |
+| BIRD SIZE | NORMAL | SMALL / NORMAL / LARGE / HUGE draw scale on top of dex height |
 | GROUND BUMPS | ON | low birds (perched, landing, flushed) can battle a walking player |
 
 ## Works well with
@@ -60,7 +69,8 @@ caps are not consulted. Returns the flyer id, or nil and a reason.
 
 When a ground bump starts a battle, the event
 `mod.wild_skies.flyer_bumped` broadcasts `{ species, level, cellX,
-cellY }`.
+cellY }`; whenever `takeFlyer` consumes a flyer, whoever called it,
+`mod.wild_skies.flyer_taken` broadcasts the same shape.
 
 Sprite packs with flying or hovering art can register it through
 `exports.registerSpriteSource(source)` (and unregister by id); the
