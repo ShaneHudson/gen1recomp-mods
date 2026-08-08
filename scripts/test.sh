@@ -14,7 +14,9 @@ TARGET="${GEN1RECOMP_MODS_DIR:-$GEN1/mods}"
 # MOD_DIR must be relative; an absolute path makes discovery silently
 # find nothing (the load tests assert against exactly that).
 cd "$GEN1"
-for mod in free_fly wild_skies; do
+for m in "$ROOT"/*/manifest.json; do
+  [ -f "$m" ] || continue
+  mod="$(basename "$(dirname "$m")")"
   for t in "mods/$mod"/tests/*.lua; do
     MOD_DIR="mods/$mod" luajit "$t"
   done
